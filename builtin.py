@@ -37,7 +37,10 @@ def print_(*args):
 
 def str_(v):
     if callable(v):
-        return "{{fn %s}}" % v.__name__
+        if v.__name__:
+            return "{{fn %s}}" % v.__name__
+        else:
+            return "{{fn}}"
     elif isinstance(v, list):
         if len(v) > 0 and v[0] in (",", ",@", "'", "`"):
             return v[0] + str_(v[1])
