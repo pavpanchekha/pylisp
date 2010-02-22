@@ -36,6 +36,7 @@ def eat_comment(s):
     return "", s[i:]
 
 def eat_value(s):
+    s = s.strip()
     if len(s) == 0:
         return None, ""
     elif s[0] == ";":

@@ -3,13 +3,17 @@ import inheritdict
 import builtin
 
 class Lisp(object):
-    def __init__(self):
+    def __init__(self, debug=False):
         self.vars = inheritdict.idict(None, **builtin.builtins)
         self.macros = builtin.macros
+        self.call_stack = []
+        self.debug = debug
 
     def run(self, s):
         global sexp
-        sexps = sexp.parse(s)
+
+        if isinstance(s, basestring):
+            sexps = sexp.parse(s)
         sexps = self.preprocess(sexps)
         out = None
         for expr in sexps:
@@ -19,12 +23,20 @@ class Lisp(object):
     def preprocess(self, tree):
         import random
         c = random.randint(1, 1000)
-        builtin.print_([c, tree])
+
+        if self.debug:
+            print c,
+            builtin.print_(tree)
+
         self.preprocess_flag = True
         while self.preprocess_flag:
             self.preprocess_flag = False
             self.preprocess_(tree)
-        builtin.print_([c, tree])
+        
+        if self.debug:
+            print c,
+            builtin.print_(tree)
+
         return tree
 
     def preprocess_(self, tree):
@@ -37,8 +49,15 @@ class Lisp(object):
             def mmacro(*args):
                 vars = dict(zip(bob[2], args))
                 self.vars = inheritdict.idict(self.vars, mmacro._vars).push(**vars)
-                body = self.preprocess(bob[3:])
-                out = self.eval(body)
+                body = ["block"] + self.preprocess(bob[3:])
+                self.call_stack.append(mmacro)
+                try:
+                    out = self.eval(body)
+                except builtin.error._orig, e:
+                    if e.type not in mmacro._catches:
+                        raise
+                    mmacro._catches[e.type](*e.args)
+                self.call_stack.pop()
                 self.vars = self.vars.pop()
                 return out
             mmacro._vars = self.vars
@@ -65,8 +84,6 @@ class Lisp(object):
                 raise NameError("Lisp: Name `%s` does not exist" % tree)
         elif len(tree) == 0:
             return None
-        elif isinstance(tree[0], list):
-            return map(self.eval, tree)[-1]
         elif tree[0] == "atom?":
             return isinstance(tree[1], basestring)
         elif tree[0] == "if":
@@ -80,10 +97,22 @@ class Lisp(object):
             def llambda(*args):
                 vars = dict(zip(tree[1], args))
                 self.vars = inheritdict.idict(self.vars, llambda._vars).push(**vars)
-                out = self.eval(tree[2:])
-                self.vars = self.vars.pop()
-                return out
+                self.call_stack.append(llambda)
+                
+                try:
+                    out = self.eval(tree[2])
+                except builtin.error._orig, e:
+                    if e.type not in llambda._catches:
+                        raise
+                    return llambda._catches[e.type](*e.args)
+                else:
+                    self.vars = self.vars.pop()
+                    return out
+                finally:
+                    self.call_stack.pop()
             llambda._vars = self.vars
+            llambda._catches = {}
+            llambda.__name__ = ""
             return llambda
         elif tree[0] == "set!":
             self.vars[tree[1]] = self.eval(tree[2])
@@ -96,6 +125,9 @@ class Lisp(object):
             return self.quasieval(tree[1])[0]
         elif tree[0] == "block":
             return map(self.eval, tree[1:])[-1]
+        elif tree[0] == "catch":
+            f = self.call_stack[-1]
+            f._catches[self.eval(tree[1])] = self.eval(tree[2])
         else:
             tree2 = map(self.eval, tree)
             return tree2[0](*tree2[1:])

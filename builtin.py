@@ -6,6 +6,8 @@ def lispfunc(name):
         def g(*args, **kwargs):
             return f(*args, **kwargs)
         g.__name__ = name
+        g._catches = {}
+        g._orig = f # For a nasty hack here and there
         builtins[name] = g
         return g
     return decorator
@@ -44,12 +46,26 @@ def str_(v):
     else:
         return str(v)
 
+@lispfunc("throw")
+def throw_(thing):
+    raise thing
+
+@lispfunc("error")
+class error(Exception):
+    def __init__(self, type, *args):
+        assert isinstance(type, basestring), "Type must be symbol"
+        self.type = type
+        self.args = list(args) #ah, tuples are dumb
+
+    def __str__(self):
+        return "%s: %s" % (self.type, str_(list(self.args)))
+
 lispfunc("len")(len)
 lispfunc("+")(operator.add)
 lispfunc("-")(operator.sub)
 lispfunc("*")(operator.mul)
 lispfunc("/")(operator.floordiv)
-lispfunc("%")(operator.mod)
+lispfunc("mod")(operator.mod)
 lispfunc("^")(operator.pow)
 lispfunc("=")(operator.eq)
 lispfunc("!=")(operator.ne)

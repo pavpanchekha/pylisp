@@ -30,6 +30,10 @@
 (def::macro let (vars body)
     `((fn ,(map car vars) ,body) ,@(map cadr vars)))
 
+(def::macro assert (expr)
+    `(if (not ,expr)
+        (throw (error 'assertion ',expr))))
+
 (def::macro while (test body)
     (let ((v1 (gensym)))
       `(let ((,v1 (fn ()
