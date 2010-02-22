@@ -1,7 +1,13 @@
 class idict:
     def __init__(self, parent=None, odict=None, **kwargs):
-        self.parent = parent or {}
-        self.dict = kwargs or odict
+        if parent is None:
+            parent = {}
+        
+        if not kwargs and odict:
+            kwargs = odict
+
+        self.parent = parent
+        self.dict = kwargs
 
     def __getitem__(self, item):
         if item in self.dict:
