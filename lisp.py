@@ -153,14 +153,45 @@ def main():
         l.run(open("stdlib.lsp").read())
     while 1:
         try:
-            s = raw_input("lisp> ")
-            v = l.run(s)
-            if v is not None:
-                builtin.print_(v)
+            s = raw_input("lisp> ") + "\n"
         except (EOFError, SystemExit):
             return
+
+        while True:
+            try:
+                sexps = sexp.parse(s)
+            except IndexError:
+                try:
+                    s += raw_input("... > ") + "\n"
+                except (EOFError, SystemExit):
+                    return
+                continue
+            else:
+                break
+
+        try:
+            v = l.run(s)
+        except builtin.error._orig, e:
+            if l.call_stack:
+                print "Call stack:"
+                for i in l.call_stack:
+                    print "\t%s" % builtin.str_(i)
+            print "Error:", e
         except Exception, e:
             traceback.print_exc()
+        else:
+            if v is not None:
+                builtin.print_(v)
 
 if __name__ == "__main__":
-    main()
+    import sys
+    import os
+    
+    if len(sys.argv) > 1:
+        for f in sys.argv[1:]:
+            l = Lisp()
+            if os.path.isfile("stdlib.lsp"):
+                l.run(open("stdlib.lsp").read())
+            l.run(open(f).read())
+    else:
+        main()
