@@ -37,8 +37,8 @@
 (def::macro while (test body)
     (let ((v1 (gensym)))
       `(let ((,v1 (fn ()
-                      (if ,test
-                        (block
-                          ,body
-                          (,v1))))))
-         (,v1))))
+        (if ,test
+          (block
+            ,body
+            (,v1))))))
+        (,v1))))
