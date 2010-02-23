@@ -14,6 +14,8 @@ class Lisp(object):
 
         if isinstance(s, basestring):
             sexps = sexp.parse(s)
+        else:
+            sexps = s
         sexps = self.preprocess(sexps)
         out = None
         for expr in sexps:
@@ -40,39 +42,23 @@ class Lisp(object):
         return tree
 
     def preprocess_(self, tree):
-        if not isinstance(tree, list) or len(tree) == 0:
-            pass
-        elif tree[0] == "def::macro":
-            if any(not isinstance(x, basestring) for x in tree[2]) or not isinstance(tree[1], basestring):
-                raise SyntaxError("Arguments to macro and its name must just be identifiers")
-            bob = tree[:]
-            def mmacro(*args):
-                vars = dict(zip(bob[2], args))
-                self.vars = inheritdict.idict(self.vars, mmacro._vars).push(**vars)
-                body = ["block"] + self.preprocess(bob[3:])
-                self.call_stack.append(mmacro)
-                try:
-                    out = self.eval(body)
-                except builtin.error._orig, e:
-                    if e.type not in mmacro._catches:
-                        raise
-                    mmacro._catches[e.type](*e.args)
-                self.call_stack.pop()
-                self.vars = self.vars.pop()
-                return out
-            mmacro._vars = self.vars
-            self.macros[tree[1]] = mmacro
+        if not isinstance(tree, list) or len(tree) == 0: return
+        elif tree[0] == "set!::macro":
+            self.macros[tree[1]] = self.eval(tree[2])
+            if callable(self.macros[tree[1]]):
+                self.macros[tree[1]].__name__ = tree[1]
             self.preprocess_flag = True
+            ret = self.macros[tree[1]]
             tree[:] = []
-        else:
-            if isinstance(tree[0], basestring):
-                if tree[0] in self.macros:
-                    tree[:] = self.macros[tree[0]](*tree[1:])
-            
-                elif tree[0] in "'`": # Don't macro-expand inside literals
-                    return
-            for i in tree:
-                self.preprocess_(i)
+            return ret
+        elif tree[0] in ("'", "`"):
+            return
+        elif isinstance(tree[0], basestring) and tree[0] in self.macros:
+            tree[:] = self.macros[tree[0]](*tree[1:])
+            self.preprocess_flag = True
+
+        for i in tree:
+            self.preprocess_(i)
 
     def eval(self, tree):
         if isinstance(tree, int):
@@ -133,7 +119,7 @@ class Lisp(object):
             return tree2[0](*tree2[1:])
 
     def quasieval(self, tree):
-        if not isinstance(tree, list):
+        if not isinstance(tree, list) or len(tree) == 0:
             return [tree]
         elif tree[0] == ",":
             c = [self.eval(tree[1])]

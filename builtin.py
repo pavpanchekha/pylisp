@@ -95,6 +95,9 @@ lispfunc("not")(operator.not_)
 def def_(name, args, *body):
     return ["set!", name, ["fn", args, ["block"] + list(body)]]
 
+def def_macro(name, args, *body):
+    return ["set!::macro", name, ["fn", args, ["block"] + list(body)]]
+
 macros = {
-    "def": def_,
+        "def": def_, "def::macro": def_macro,
     }
