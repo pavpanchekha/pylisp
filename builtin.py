@@ -32,22 +32,36 @@ def gensym():
 @lispfunc("print")
 def print_(*args):
     for v in args:
-        print str_(v),
+        print "\n".join(str_(v, breakline=True))
     print
 
-def str_(v):
+def str_(v, breakline=False, indent=0):
     if callable(v):
         if v.__name__:
-            return "{{fn %s}}" % v.__name__
+            return ["{{fn %s}}"] % v.__name__
         else:
-            return "{{fn}}"
+            return ["{{fn}}"]
     elif isinstance(v, list):
         if len(v) > 0 and v[0] in (",", ",@", "'", "`"):
-            return v[0] + str_(v[1])
+            c = str_(v[1], breakline)
+            c[0]  = v[0] + c[0]
+            return c
         else:
-            return "(" + " ".join(map(str_, v)) + ")"
+            strs = sum(map(lambda x: str_(x, breakline, indent + 2), v), [])
+            slen = len(" ".join(strs)) + indent*2
+            if slen > 50 and breakline: # 75 == Max width
+                indent = "  "
+                w = map(lambda x: indent + x, strs)
+                if len(w) > 0:
+                    w[0] = "(" + w[0].strip()
+                else:
+                    w.append("(")
+                w[-1] += ")"
+                return w
+            else:
+                return ["(" + " ".join(strs) + ")"]
     else:
-        return str(v)
+        return [str(v)]
 
 @lispfunc("throw")
 def throw_(thing):

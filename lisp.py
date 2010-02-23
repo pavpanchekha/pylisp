@@ -100,7 +100,7 @@ class Lisp(object):
                 self.call_stack.append(llambda)
                 
                 try:
-                    out = self.eval(tree[2])
+                    out = self.run(tree[2:])
                 except builtin.error._orig, e:
                     if e.type not in llambda._catches:
                         raise
