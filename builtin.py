@@ -33,12 +33,12 @@ def gensym():
 def print_(*args):
     for v in args:
         print "\n".join(str_(v, breakline=True))
-    print
+    return args[-1]
 
 def str_(v, breakline=False, indent=0):
     if callable(v):
         if v.__name__:
-            return ["{{fn %s}}"] % v.__name__
+            return ["{{fn %s}}" % v.__name__]
         else:
             return ["{{fn}}"]
     elif isinstance(v, list):
