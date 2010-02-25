@@ -63,25 +63,23 @@ def str_(v, breakline=False, indent=0):
     else:
         return [str(v)]
 
-@lispfunc("throw")
-def throw_(thing):
-    raise thing
+@lispfunc("signal")
+def throw_(type, *args):
+    raise signal(type, *args)
 
-@lispfunc("error")
-class error(Exception):
+class signal(Exception):
     def __init__(self, type, *args):
-        assert isinstance(type, basestring), "Type must be symbol"
-        self.type = type
+        self.type = type if isinstance(type, list) else [type]
         self.args = list(args) #ah, tuples are dumb
 
     def __str__(self):
-        return "%s: %s" % (self.type, str_(list(self.args)))
+        return "%s: %s" % (str_(self.type)[0], " ".join(map(lambda x: str_(x)[0], self.args[0])))
 
 lispfunc("len")(len)
 lispfunc("+")(operator.add)
 lispfunc("-")(operator.sub)
 lispfunc("*")(operator.mul)
-lispfunc("/")(operator.floordiv)
+lispfunc("/")(operator.truediv)
 lispfunc("mod")(operator.mod)
 lispfunc("^")(operator.pow)
 lispfunc("=")(operator.eq)

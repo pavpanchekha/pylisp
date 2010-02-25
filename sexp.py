@@ -7,11 +7,19 @@ def eat_name(s):
     return s[:i], s[i:]
 
 def eat_number(s):
-    if s[0] not in "0123456789": return "", s
+    if s[0] not in "0123456789.": return "", s
 
     i = 0
-    while i < len(s) and s[i] in "0123456789": i += 1
-    return  int(s[:i]), s[i:]
+    while i < len(s) and s[i] in "0123456789.": i += 1
+
+    mys = s[:i]
+
+    if mys == ".":
+        return "", s
+    elif "." in mys:
+        return float(mys), s[i:]
+    else:
+        return int(mys), s[i:]
 
 def eat_sexp(s):
     if s[0] != "(": return "", s
@@ -44,7 +52,7 @@ def eat_value(s):
         return eat_value(s)
     elif s[0] == "(":
         return eat_sexp(s)
-    elif s[0] in "0123456789":
+    elif s[0] in "0123456789.":
         return eat_number(s)
     elif s[0] in "'`,":
         c = s[0]
