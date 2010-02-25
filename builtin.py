@@ -32,7 +32,8 @@ def gensym():
 @lispfunc("print")
 def print_(*args):
     for v in args:
-        print "\n".join(str_(v, breakline=True))
+        print "\n".join(str_(v, breakline=True)),
+    print
     return args[-1]
 
 def str_(v, breakline=False, indent=0):
