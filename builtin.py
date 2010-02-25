@@ -96,6 +96,9 @@ def def_(name, args, *body):
 def def_macro(name, args, *body):
     return ["set!::macro", name, ["fn", args, ["block"] + list(body)]]
 
+def control(name, *args):
+    return ["'", [name, list(args) or []]]
+
 macros = {
-        "def": def_, "def::macro": def_macro,
+        "def": def_, "def::macro": def_macro, "control": control,
     }

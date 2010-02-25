@@ -2,21 +2,35 @@ import sexp
 import inheritdict
 import builtin
 
+class ReturnI(Exception): pass
+class BeReturnedI(Exception): pass
+            
+def iftuple(s):
+    if isinstance(s, str):
+        return (s,)
+    else:
+        return tuple(s)
+
+# Known strange bugs: (while) needs to be expanded
+# once, and then it will work fine...
+
 class Lisp(object):
     def __init__(self, debug=False):
         self.vars = inheritdict.idict(None, **builtin.builtins)
         self.macros = builtin.macros
-        self.call_stack = []
+        self.call_stack = [self]
+        self._catches = {}
         self.debug = debug
 
     def run(self, s):
         global sexp
 
-        if isinstance(s, basestring):
+        if isinstance(s, str):
             sexps = sexp.parse(s)
         else:
             sexps = s
         sexps = self.preprocess(sexps)
+
         out = None
         for expr in sexps:
             out = self.eval(expr)
@@ -53,70 +67,127 @@ class Lisp(object):
             return ret
         elif tree[0] in ("'", "`"):
             return
-        elif isinstance(tree[0], basestring) and tree[0] in self.macros:
-            tree[:] = self.macros[tree[0]](*tree[1:])
+        elif isinstance(tree[0], str) and tree[0] in self.macros:
+            l = self.macros[tree[0]](*tree[1:])
+            if not isinstance(l, list):
+                l = ["'", l]
+            tree[:] = l
+            self.preprocess(tree)
             self.preprocess_flag = True
 
         for i in tree:
             self.preprocess_(i)
 
+    def _atomp(self, var):
+        return type(var[0]) in map(type, [0L, 0, 0., ""])
+
+    def _if(self, test, true, false=None):
+        if self.eval(test):
+            return self.eval(true)
+        elif false:
+            return self.eval(false)
+
+    def _fn(self, sig, body):
+        if any(not isinstance(x, str) for x in sig):
+            raise SyntaxError("Arguments to function must just be identifiers")
+        
+        def llambda(*args):
+            vars = dict(zip(sig, args))
+            self.vars = inheritdict.idict(self.vars, llambda._vars).push(**vars)
+            self.call_stack.append(llambda)
+            try:
+                out = self.run([body])
+                return out
+            except ReturnI, e:
+                return e.args[0]
+            finally:
+                self.call_stack.pop()
+                self.vars = self.vars.pop()
+
+        llambda._vars = self.vars
+        llambda._catches = {}
+        llambda.__name__ = ""
+        return llambda
+
+    def _set(self, name, value):
+        value = self.eval(value)
+        self.vars[name] = value
+        if callable(value): value.__name__ = name
+        return value
+
+    def _block(self, *exprs):
+        return map(self.eval, exprs)[-1]
+
+    def _handle(self, type, handler):
+        type = iftuple(self.eval(type))
+        handler = self.eval(handler)
+    
+        f = self.call_stack[-1]
+        f._catches[type] = handler
+
+    def _signal(self, type, *args):
+        type = iftuple(self.eval(type))
+        args = map(self.eval, args)
+        signal = builtin.signal(type, args)
+
+        for i, f in enumerate(reversed(self.call_stack)):
+            ttype = type[:]
+            while ttype and ttype not in f._catches:
+                ttype = ttype[:-1]
+            if ttype:
+                break
+        else:
+            raise signal
+        
+        handler = f._catches[ttype]
+        control = handler(signal)
+
+        assert isinstance(control[0], str), "Received non-control-word return value from signal handler"
+
+        if control[0] == "return":
+            raise ReturnI(control[1])
+        elif control[0] == "ignore":
+            return control[1]
+        elif control[0] == "bubble":
+            raise BeReturnedI(i, control[1])
+        elif control[0] == "debug":
+            import sys, traceback
+            traceback.print_exc()
+            sys.exit()
+        elif control[0] == "exit":
+            import sys
+            print control[1]
+            sys.exit()
+
+    builtindict = {"atom?": _atomp, "if": _if,
+        "fn": _fn, "set!": _set, "block": _block,
+        "signal": _signal, "handle": _handle}
+
     def eval(self, tree):
-        if isinstance(tree, int):
+        if type(tree) in map(type, (0, 0L, 0.)):
             return tree
-        elif isinstance(tree, basestring):
+        elif isinstance(tree, str):
             if tree in self.vars:
                 return self.vars[tree]
             else:
                 raise NameError("Lisp: Name `%s` does not exist" % tree)
         elif len(tree) == 0:
             return None
-        elif tree[0] == "atom?":
-            return isinstance(tree[1], basestring)
-        elif tree[0] == "if":
-            if self.eval(tree[1]):
-                return self.eval(tree[2])
-            elif len(tree) > 3:
-                return self.eval(tree[3])
-        elif tree[0] == "fn":
-            if any(not isinstance(x, basestring) for x in tree[1]):
-                raise SyntaxError("Arguments to function must just be identifiers")
-            def llambda(*args):
-                vars = dict(zip(tree[1], args))
-                self.vars = inheritdict.idict(self.vars, llambda._vars).push(**vars)
-                self.call_stack.append(llambda)
-                
-                try:
-                    out = self.run(tree[2:])
-                except builtin.error._orig, e:
-                    if e.type not in llambda._catches:
-                        raise
-                    return llambda._catches[e.type](*e.args)
-                else:
-                    self.vars = self.vars.pop()
-                    return out
-                finally:
-                    self.call_stack.pop()
-            llambda._vars = self.vars
-            llambda._catches = {}
-            llambda.__name__ = ""
-            return llambda
-        elif tree[0] == "set!":
-            self.vars[tree[1]] = self.eval(tree[2])
-            if callable(self.vars[tree[1]]):
-                self.vars[tree[1]].__name__ = tree[1]
-            return self.vars[tree[1]]
+        elif isinstance(tree[0], str) and tree[0] in self.builtindict:
+            return self.builtindict[tree[0]](self, *tree[1:])
         elif tree[0] == "'":
             return tree[1]
         elif tree[0] == "`":
             return self.quasieval(tree[1])[0]
-        elif tree[0] == "block":
-            return map(self.eval, tree[1:])[-1]
-        elif tree[0] == "catch":
-            f = self.call_stack[-1]
-            f._catches[self.eval(tree[1])] = self.eval(tree[2])
         else:
             tree2 = map(self.eval, tree)
-            return tree2[0](*tree2[1:])
+            try:
+                return tree2[0](*tree2[1:])
+            except BeReturnedI, e:
+                if len(self.call_stack) == e.args[0]:
+                    return e.args[1]
+                else:
+                    raise
 
     def quasieval(self, tree):
         if not isinstance(tree, list) or len(tree) == 0:
@@ -129,55 +200,3 @@ class Lisp(object):
         else:
             return [sum(map(self.quasieval, tree), [])]
 
-def main():
-    import traceback
-    import os
-    import readline
-
-    l = Lisp()
-    if os.path.isfile("stdlib.lsp"):
-        l.run(open("stdlib.lsp").read())
-    while 1:
-        try:
-            s = raw_input("lisp> ") + "\n"
-        except (EOFError, SystemExit):
-            return
-
-        while True:
-            try:
-                sexps = sexp.parse(s)
-            except IndexError:
-                try:
-                    s += raw_input("... > ") + "\n"
-                except (EOFError, SystemExit):
-                    return
-                continue
-            else:
-                break
-
-        try:
-            v = l.run(s)
-        except builtin.error._orig, e:
-            if l.call_stack:
-                print "Call stack:"
-                for i in l.call_stack:
-                    print "\t%s" % builtin.str_(i)
-            print "Error:", e
-        except Exception, e:
-            traceback.print_exc()
-        else:
-            if v is not None:
-                builtin.print_(v)
-
-if __name__ == "__main__":
-    import sys
-    import os
-    
-    if len(sys.argv) > 1:
-        for f in sys.argv[1:]:
-            l = Lisp()
-            if os.path.isfile("stdlib.lsp"):
-                l.run(open("stdlib.lsp").read())
-            l.run(open(f).read())
-    else:
-        main()

@@ -25,12 +25,23 @@
 ; exceptions
 (set! flag False)
 (def fail? ()
-     (catch 'test (fn () (set! flag True)))
-     (throw (error 'test)))
+     (handle 'test (fn ()
+         (set! flag True)
+         (control ignore)))
+     (signal 'test))
 (fail?)
 (assert flag)
 
+; macros
+(def::macro betrue (a b)
+    True)
+(assert (betrue 1 17))
 
+; while loops
+(set! a 1)
+(while (< a 1000)
+    (set! a (* a 2)))
+(assert (= a 1024))
 
 ; Cool! We won!
 (print 'Success)

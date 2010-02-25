@@ -28,11 +28,17 @@
 (def cddr (x) (cdr (cdr x)))
 
 (def::macro let (vars body)
-    `((fn ,(map car vars) ,body) ,@(map cadr vars)))
+    `((fn ,(map car vars) (block ,body)) ,@(map cadr vars)))
+
+(def::macro ++ (var)
+    `(set! ,var (+ ,var 1)))
+
+(def::macro post++ (var)
+    `(- (++ ,var) 1))
 
 (def::macro assert (expr)
     `(if (not ,expr)
-        (throw (error 'assertion ',expr))))
+        (signal '(error assertion) ',expr)))
 
 (def::macro while (test body)
     (let ((v1 (gensym)))
@@ -42,3 +48,4 @@
             ,body
             (,v1))))))
         (,v1))))
+
