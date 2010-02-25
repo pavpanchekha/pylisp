@@ -21,6 +21,16 @@ def eat_number(s):
     else:
         return int(mys), s[i:]
 
+def eat_str(s):
+    if s[0] != '"': return "", s
+
+    i = 1
+    while i < len(s) and s[i] != '"':
+        if s[i] == "\\": i += 2
+        else: i += 1
+
+    return ["'", eval(s[:i+1])], s[i+1:]
+
 def eat_sexp(s):
     if s[0] != "(": return "", s
 
@@ -62,6 +72,8 @@ def eat_value(s):
             s = s[1:]
         sexp, s = eat_value(s)
         return [c, sexp], s
+    elif s[0] == '"':
+        return eat_str(s)
     else:
         sexp, s = eat_name(s)
         if sexp in ("True", "False"):

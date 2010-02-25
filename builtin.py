@@ -75,6 +75,10 @@ class signal(Exception):
     def __str__(self):
         return "%s: %s" % (str_(self.type)[0], " ".join(map(lambda x: str_(x)[0], self.args[0])))
 
+@lispfunc("silent")
+def silent(*args, **kwargs):
+    return None
+
 lispfunc("len")(len)
 lispfunc("+")(operator.add)
 lispfunc("-")(operator.sub)
