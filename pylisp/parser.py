@@ -2,9 +2,13 @@ def eat_name(s):
     i = 0
     if s[0] in "0123456789":
         return "", s
-    while i < len(s) and s[i] not in "()'# \t\n\v\f":
+    while i < len(s) and s[i] not in "(); \t\n\v\f":
         i += 1
-    return s[:i], s[i:]
+    n = s[:i]
+    if "." not in (n, n[0], n[-1]) and "." in n:
+        nexp = n.split(".")
+        n = ["::", nexp[0]] + map(lambda x: ["'", x], nexp[1:])
+    return n, s[i:]
 
 def eat_number(s):
     if s[0] not in "0123456789.": return "", s
@@ -15,7 +19,7 @@ def eat_number(s):
     mys = s[:i]
 
     if mys == ".":
-        return "", s
+        return ".", s[1:]
     elif "." in mys:
         return float(mys), s[i:]
     else:
@@ -76,8 +80,8 @@ def eat_value(s):
         return eat_str(s)
     else:
         sexp, s = eat_name(s)
-        if sexp in ("True", "False"):
-            sexp = {"True": True, "False": False}[sexp]
+        if sexp in ("#t", "#f"):
+            sexp = {"#t": True, "#f": False}[sexp]
         return sexp, s
 
 def parse(s):

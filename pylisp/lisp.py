@@ -1,6 +1,11 @@
-import sexp
+import parser
 import inheritdict
 import builtin
+import info
+import importer
+
+import sys
+sys.setrecursionlimit(1000)
 
 class ReturnI(Exception): pass
 class BeReturnedI(Exception): pass
@@ -11,22 +16,25 @@ def iftuple(s):
     else:
         return tuple(s)
 
-# Known strange bugs: (while) needs to be expanded
-# once, and then it will work fine...
-
 class Lisp(object):
     def __init__(self, debug=False):
-        self.vars = inheritdict.idict(None, **builtin.builtins)
+        bt = builtin.builtins.copy()
+        bt.update({"eval": self.eval, "atom?": self._atomp, "#import": self._import, "has": self._has})
+        self.vars = inheritdict.idict(None, **bt).push()
         self.macros = builtin.macros
         self.call_stack = [self]
+        self._lispprint = lambda: "#main"
         self._catches = {}
         self.debug = debug
+
+        self.run(info.lib("stdlib"))
+        self.vars = self.vars.push()
 
     def run(self, s):
         global sexp
 
         if isinstance(s, str):
-            sexps = sexp.parse(s)
+            sexps = parser.parse(s)
         else:
             sexps = s
         sexps = self.preprocess(sexps)
@@ -58,15 +66,33 @@ class Lisp(object):
     def preprocess_(self, tree):
         if not isinstance(tree, list) or len(tree) == 0: return
         elif tree[0] == "set!::macro":
-            self.macros[tree[1]] = self.eval(tree[2])
-            if callable(self.macros[tree[1]]):
-                self.macros[tree[1]].__name__ = tree[1]
+            name = self.eval(tree[1])
+            fn = self.eval(tree[2])
+            self.macros[name] = fn
+            if callable(self.macros[name]):
+                self.macros[name].__name__ = name
             self.preprocess_flag = True
-            ret = self.macros[tree[1]]
+            ret = self.macros[name]
             tree[:] = []
             return ret
         elif tree[0] in ("'", "`"):
             return
+        elif tree[0] == "#import::macro":
+            modname = ".".join(map(self.eval, tree[1:]))
+            importer.preprocess_only = True
+            try:
+                __import__(modname)
+            finally:
+                importer.preprocess_only = False
+            mod = sys.modules[modname]
+            if "#macros" in mod.__dict__:
+                self.macros.update(mod.__dict__["#macros"])
+                self.preprocess_flag = True
+            tree[:] = []
+        elif tree[0] == "block::macro":
+            map(self.run, tree[1:])
+            self.preprocess_flag = True
+            tree[:] = []
         elif isinstance(tree[0], str) and tree[0] in self.macros:
             l = self.macros[tree[0]](*tree[1:])
             if not isinstance(l, list):
@@ -78,8 +104,23 @@ class Lisp(object):
         for i in tree:
             self.preprocess_(i)
 
+    def _return(self, arg=[]):
+        raise ReturnI(arg)
+
+    def _import(self, *args):
+        args = list(args)
+        modname = ".".join(args)
+        __import__(modname)
+        return sys.modules[modname]
+
+    def _has(self, var, arg=None):
+        if arg is None:
+            return var in self.vars
+        else:
+            return hasattr(var, arg)
+
     def _atomp(self, var):
-        return type(var[0]) in map(type, [0L, 0, 0., ""])
+        return type(self.eval(var)) in map(type, [0L, 0, 0., ""])
 
     def _if(self, test, true, false=None):
         if self.eval(test):
@@ -87,36 +128,82 @@ class Lisp(object):
         elif false:
             return self.eval(false)
 
-    def _fn(self, sig, body):
+    def _fn(self, sig, *body):
+        if isinstance(body, tuple):
+            body = list(body)
+        if isinstance(sig, str):
+            sig = [".", sig]
         if any(not isinstance(x, str) for x in sig):
             raise SyntaxError("Arguments to function must just be identifiers")
         
+        if "." in sig:
+            many_name = sig[sig.index(".") + 1]
+            sig[sig.index("."):] = []
+        else:
+            many_name = None
+        
+        
         def llambda(*args):
+            args = list(args)
             vars = dict(zip(sig, args))
-            self.vars = inheritdict.idict(self.vars, llambda._vars).push(**vars)
+
+            if many_name is not None:
+                vars[many_name] = args[len(sig):]
+
+            self.vars = inheritdict.idict(self.vars, llambda._vars).push(vars)
             self.call_stack.append(llambda)
             try:
-                out = self.run([body])
+                out = self.run(body)
                 return out
             except ReturnI, e:
                 return e.args[0]
             finally:
                 self.call_stack.pop()
-                self.vars = self.vars.pop()
+                self.vars = self.vars.pop().pop()
 
         llambda._vars = self.vars
         llambda._catches = {}
         llambda.__name__ = ""
         return llambda
 
+    def _class(self, inheritfrom, *body):
+        d = {}
+        self.vars = inheritdict.idict(self.vars, d)
+
+        try:
+            self.eval(["block"] + list(body))
+            
+            if "__init__" in d:
+                k = d["__init__"]
+                def __init__(*args, **kwargs):
+                    k(*args, **kwargs)
+                d["__init__"] = __init__
+            
+            if "__div__" in d:
+                d["__truediv__"] = d["__div__"]
+        
+            bases = map(self.eval, inheritfrom)
+            return type("", tuple(bases), d)
+        finally:
+            self.vars = self.vars.pop()
+
     def _set(self, name, value):
         value = self.eval(value)
-        self.vars[name] = value
-        if callable(value): value.__name__ = name
+        if not isinstance(name, list):
+            raise SyntaxError("What the hell are you trying to set?")
+        elif name[0] == "'" and isinstance(name[1], str):
+            self.vars[name[1]] = value
+            if callable(value): value.__name__ = name[1]
+        elif name[0] == "::":
+            setattr(self.eval(["::", name[:-1]]), self.eval(name[-1]), self.eval(value))
+        else:
+            raise SyntaxError("What the hell are you trying to set?")
+
         return value
 
     def _block(self, *exprs):
-        return map(self.eval, exprs)[-1]
+        if exprs:
+            return map(self.eval, exprs)[-1]
 
     def _handle(self, type, handler):
         type = iftuple(self.eval(type))
@@ -126,9 +213,10 @@ class Lisp(object):
         f._catches[type] = handler
 
     def _signal(self, type, *args):
-        type = iftuple(self.eval(type))
-        args = map(self.eval, args)
-        signal = builtin.signal(type, args)
+        l = self.eval(type)
+        type = iftuple(l)
+        args = map(self.run, args)
+        signal = builtin.signal(l, *args)
 
         for i, f in enumerate(reversed(self.call_stack)):
             ttype = type[:]
@@ -142,7 +230,8 @@ class Lisp(object):
         handler = f._catches[ttype]
         control = handler(signal)
 
-        assert isinstance(control[0], str), "Received non-control-word return value from signal handler"
+        if len(control) == 1:
+            control[1:] = [None]
 
         if control[0] == "return":
             raise ReturnI(control[1])
@@ -156,21 +245,25 @@ class Lisp(object):
             sys.exit()
         elif control[0] == "exit":
             import sys
-            print control[1]
+            if len(control) > 1:
+                print control[1]
             sys.exit()
+        else:
+            raise SyntaxError("Received non-control-word return value from signal handler")
 
-    builtindict = {"atom?": _atomp, "if": _if,
-        "fn": _fn, "set!": _set, "block": _block,
+
+    builtindict = {"if": _if, "set!": _set,
+        "fn": _fn, "block": _block, "cls": _class,
         "signal": _signal, "handle": _handle}
 
     def eval(self, tree):
-        if type(tree) in map(type, (0, 0L, 0.)):
-            return tree
-        elif isinstance(tree, str):
+        if isinstance(tree, str):
             if tree in self.vars:
                 return self.vars[tree]
             else:
                 raise NameError("Lisp: Name `%s` does not exist" % tree)
+        elif not isinstance(tree, list):
+            return tree
         elif len(tree) == 0:
             return None
         elif isinstance(tree[0], str) and tree[0] in self.builtindict:
@@ -199,4 +292,9 @@ class Lisp(object):
             return self.eval(tree[1])
         else:
             return [sum(map(self.quasieval, tree), [])]
+
+def setup_loader():
+    f = importer.Finder(info.import_path, Lisp)
+    sys.meta_path.append(f)
+setup_loader()
 
