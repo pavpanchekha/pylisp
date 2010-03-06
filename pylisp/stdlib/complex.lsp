@@ -9,59 +9,59 @@
      (math.atan2 z.imag z.real))
 
 (def log (z)
-     (Complex (math.log (abs z)) (me.arg z)))
+     (Complex (math.log (abs z)) (arg z)))
        
 
 (class Complex ()
-       (def __init__ (self re im)
+       (def::method __init__ (re im)
             (set! self.real re)
             (set! self.imag im))
 
-       (def::class polar (me norm arg)
-             (me (* norm (math.cos arg))
-                 (* norm (math.sin arg))))
+       (def::class polar (norm arg)
+             (cls (* norm (math.cos arg))
+                  (* norm (math.sin arg))))
 
-       (def __add__ (self other)
+       (def::method __add__ (other)
             (Complex (+ self.real other.real)
                      (+ self.imag other.imag)))
 
-       (def __sub__ (self other)
+       (def::method __sub__ (other)
             (Complex (- self.real other.real)
                      (- self.imag other.imag)))
 
-       (def __mul__ (self other)
+       (def::method __mul__ (other)
             (Complex (- (* self.real other.real)
                         (* self.imag other.imag))
                      (+ (* self.real other.imag)
                         (* self.imag other.real))))
 
-       (def __abs__ (self)
+       (def::method __abs__ ()
             (math.sqrt (+ (^ self.real 2) (^ self.imag 2))))
 
-       (def _reciprocal (self)
+       (def::method _reciprocal ()
             (let ((normsq (^ (abs self) 2)))
               (Complex (/ self.real normsq)
                        (/ (- self.imag) normsq))))
 
-       (def __div__ (self other)
+       (def::method __div__ (other)
             (* (other._reciprocal) self))
        
-       (def __eq__ (self other)
+       (def::method __eq__ (other)
             (< (abs (- self other)) *epsilon*))
        
-       (def __ne__ (self other)
+       (def::method __ne__ (other)
             (not (= self other)))
        
-       (def __invert__ (self other)
+       (def::method __invert__ (other)
             (Complex self.real (- self.imag)))
        
-       (def __str__ (self)
+       (def::method __str__ ()
             (+ (str self.real)
                (if (< self.imag 0) " - " " + ")
                (str (abs self.imag))))
 
-       (def __pow__ (self other)
-            (Complex.exp (* other (Complex.log self)))))
+       (def::method __pow__ (other)
+            (exp (* other (log self)))))
 
 (set! 'z (Complex 1 1))
 (set! 'w (Complex 2 (- 3)))

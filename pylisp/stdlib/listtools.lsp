@@ -1,0 +1,5 @@
+(def groups (l n)
+     (if (<= (len l) n)
+         (list l)
+         (cons ([] l (slice 0 n))
+               (groups ([] l (slice n #0))))))
