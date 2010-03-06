@@ -1,4 +1,4 @@
 #!/usr/bin/envv python
 
-import pylisp
-pylisp.shell()
+import pylisp.shell
+pylisp.shell.main()

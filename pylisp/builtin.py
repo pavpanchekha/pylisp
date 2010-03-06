@@ -98,25 +98,12 @@ lispfunc("list")(lambda *args: list(args))
 lispfunc("static-method")(staticmethod)
 lispfunc("class-method")(classmethod)
 lispfunc("exit")(sys.exit)
-
-def def_(name, args, *body):
-    return ["set!", ["'", name], ["fn", args] + list(body)]
-
-def def_static(name, args, *body):
-    return ["set!", ["'", name], ["static-method", ["fn", args] + list(body)]]
-
-def def_class(name, args, *body):
-    return ["set!", ["'", name], ["class-method", ["fn", args] + list(body)]]
-
-def def_macro(name, args, *body):
-    return ["set!::macro", ["'", name], ["fn", args] + list(body)]
-
-def class_(name, inheritsfrom, *body):
-    return ["set!", ["'", name], ["cls", inheritsfrom] + list(body)]
-
-def control(name, *args):
-    return ["'", [name, list(args) or []]]
+lispfunc("hash")(hash)
+lispfunc("all")(all)
+lispfunc("any")(any)
+lispfunc("map")(map)
+lispfunc("zip")(zip)
+lispfunc("filter")(filter)
 
 macros = {
-        "def": def_, "def::macro": def_macro, "control": control, "class": class_, "def::class": def_class, "def::static": def_static,
     }

@@ -19,7 +19,7 @@ def iftuple(s):
 class Lisp(object):
     def __init__(self, debug=False):
         bt = builtin.builtins.copy()
-        bt.update({"eval": self.eval, "atom?": self._atomp, "#import": self._import, "has": self._has})
+        bt.update({"eval": self.eval, "atom?": self._atomp, "#import": self._import, "has": self._has, "#include": self._include})
         self.vars = inheritdict.idict(None, **bt).push()
         self.macros = builtin.macros
         self.call_stack = [self]
@@ -28,6 +28,8 @@ class Lisp(object):
         self.debug = debug
 
         self.run(info.lib("stdlib"))
+        self.run(info.lib("fntypes"))
+        self.run(info.lib("importtypes"))
         self.vars = self.vars.push()
 
     def run(self, s):
@@ -112,6 +114,12 @@ class Lisp(object):
         modname = ".".join(args)
         __import__(modname)
         return sys.modules[modname]
+
+    def _include(self, *args):
+        args = list(args)
+        modname = ".".join(args)
+        __import__(modname)
+        self.vars.dict.update(sys.modules[modname].__dict__)
 
     def _has(self, var, arg=None):
         if arg is None:
@@ -253,7 +261,7 @@ class Lisp(object):
 
 
     builtindict = {"if": _if, "set!": _set,
-        "fn": _fn, "block": _block, "cls": _class,
+        "fn": _fn, "block": _block, "#class": _class,
         "signal": _signal, "handle": _handle}
 
     def eval(self, tree):
