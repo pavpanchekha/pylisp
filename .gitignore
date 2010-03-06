@@ -1,1 +1,5 @@
 *.pyc
+bin
+lib
+include
+Pylisp.egg-info
