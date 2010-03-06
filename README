@@ -1,5 +1,0 @@
-A small lisp written in Python. The goals are not
-to implement any specific lisp dialect. That said,
-aims are to be as Scheme-like as possible,
-except with Common-Lisp style macros, and without
-    (so far) continuations.
