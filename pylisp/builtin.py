@@ -3,6 +3,8 @@ import prettyprinter
 import sys
 
 builtins = {"nil": [], "#t": True, "#f": False, "#0": None}
+macros = {}
+
 def lispfunc(name):
     def decorator(f):
         def g(*args, **kwargs):
@@ -14,26 +16,21 @@ def lispfunc(name):
         return g
     return decorator
 
-def foldable(f):
+def foldable(f, default = None):
     def t(*args):
-        return reduce(f, args)
+        if not args and default is not None:
+            return default
+        else:
+            return reduce(f, args)
     return t
 
-@lispfunc("car")
-def car(l):
-    return l[0]
+# -----------------------------------------
 
-@lispfunc("cdr")
-def cdr(l):
-    return l[1:]
-
-@lispfunc("last")
-def last(l):
-    return l[-1]
-
-@lispfunc("cons")
-def cons(a, b):
-    return [a] + b
+def car(l): return l[0]
+def cdr(l): return l[1:]
+def last(l): return l[-1]
+def cons(a, b): return [a] + b
+def dict_(*args): return dict(args)
 
 @lispfunc("gensym")
 def gensym():
@@ -73,37 +70,23 @@ def subtract(*args):
     else:
         return foldable(operator.sub)(*args)
 
-lispfunc("len")(len)
-lispfunc("+")(foldable(operator.add))
-lispfunc("*")(foldable(operator.mul))
-lispfunc("/")(foldable(operator.truediv))
-lispfunc("mod")(operator.mod)
-lispfunc("^")(operator.pow) # TODO: foldRable ?
-lispfunc("=")(operator.eq) # TODO: Rich comparisons
-lispfunc("!=")(operator.ne)
-lispfunc("<")(operator.lt)
-lispfunc(">")(operator.gt)
-lispfunc("<=")(operator.le)
-lispfunc(">=")(operator.ge)
-lispfunc("not")(operator.not_)
-lispfunc("conj")(operator.invert)
-lispfunc("::")(foldable(getattr))
-lispfunc("slice")(slice)
-lispfunc("range")(range)
-lispfunc("dir")(dir)
-lispfunc("[]")(foldable(operator.getitem))
-lispfunc("help")(help)
-lispfunc("abs")(abs)
-lispfunc("list")(lambda *args: list(args))
-lispfunc("static-method")(staticmethod)
-lispfunc("class-method")(classmethod)
-lispfunc("exit")(sys.exit)
-lispfunc("hash")(hash)
-lispfunc("all")(all)
-lispfunc("any")(any)
-lispfunc("map")(map)
-lispfunc("zip")(zip)
-lispfunc("filter")(filter)
+_t = {"+": foldable(operator.add, 0), "-": subtract, "*": foldable(operator.mul, 1),
+        "/": foldable(operator.truediv), "^": operator.pow, "=": operator.eq,
+        "!=": operator.ne, "<": operator.lt, ">": operator.gt, "<=": operator.le,
+        ">=": operator.ge, "not": operator.not_, "conj": operator.invert,
+        "::": foldable(getattr), "[]": foldable(operator.getitem),
+        "mod": operator.mod, "list": lambda *args: list(args),
+        "static-method": staticmethod, "class-method": classmethod,
+        "callable?": callable, "raw_input": input, "#property": property,
+        "sort": sorted, "help": help, "dict": dict_}
 
-macros = {
-    }
+for name, fn in _t.items():
+    lispfunc(name)(fn)
+
+_t2 = [len, slice, range, dir, abs, sys.exit, hash, all, map, zip, filter,
+        any, bin, bool, chr, open, format, hex, id, int, max, min,
+        oct, ord, reduce, round, sum, car, cdr, cons, last]
+
+for fn in _t2:
+    lispfunc(fn.__name__)(fn)
+
