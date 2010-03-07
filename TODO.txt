@@ -1,0 +1,3 @@
+ - Optional arguments & keyword arguments?
+ - Make setting in a scope bubble down
+ - (return) fails inside loops
