@@ -57,6 +57,15 @@ def eat_comment(s):
     while i < len(s) and s[i] != "\n": i += 1
     return "", s[i:]
 
+def eat_pyeval(s):
+    if not s.startswith("{{"): return "", s
+    
+    i = 2
+    while i+1 < len(s) and s[i] != '}' and s[i+1] != "}":
+        i += 1
+    
+    return ["pyeval", ["'", s[2:i+1]]], s[i+3:]
+
 def eat_value(s):
     s = s.strip()
     if len(s) == 0:
@@ -78,6 +87,8 @@ def eat_value(s):
         return [c, sexp], s
     elif s[0] == '"':
         return eat_str(s)
+    elif s.startswith("{{"):
+        return eat_pyeval(s)
     else:
         sexp, s = eat_name(s)
         if sexp in ("#t", "#f"):

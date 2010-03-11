@@ -3,7 +3,10 @@
 import lisp
 import info
 import builtin
-import readline
+try:
+    import readline
+except ImportError:
+    pass #Probably on Windows
 import os, sys
 
 # Set up the interpreter
