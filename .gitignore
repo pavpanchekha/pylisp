@@ -3,3 +3,6 @@ bin
 lib
 include
 Pylisp.egg-info
+docs/.build
+docs/Makefile
+docs/make.bat

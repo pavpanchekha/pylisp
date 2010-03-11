@@ -1,0 +1,50 @@
+Python Interoperability
+=======================
+
+One of the major design goals for pylisp was to be completely interoperable
+with Python. As such, the use of Python features comes almost for free. Note
+that this page refers only to having Python and pylisp code work together; it
+does not discuss design decisions made in pylisp due to its dependence on Python.
+
+Modules
+-------
+
+Pylisp can import and use Python modules natively, using any of its import
+commands::
+
+    (use math)
+    (math.sqrt 4) ; -> 2.0
+
+More interesting is that Python code can also import pylisp code, after it
+imports the ``pylisp`` package. If I have a pylisp file ``stuff.lsp``::
+
+    (def stuffunc (x)
+        (* x x (- x (/ 1 x))))
+
+then I can write the following Python code and have it work:
+
+.. code-block:: python
+    
+    import pylisp
+    import stuff
+    
+    stuff.stuffunc(4) ; 60.0
+
+Note that macros will not carry over, for obvious reasons. This makes pylisp
+modules perhaps less useful than they may be; on the other hand, no reasonable way
+of passing along macros seems evident.
+
+Inline Python
+-------------
+
+There are two ways of executing inline Python code, due to the fundamental distinction
+between expressions and statements in Python. Basically, ``{{ code }}`` evaluates the
+code and returns its result, while ``{{{ code }}}`` executes the code, not producing
+a return value but allowing for more complicated code than simple expressions. So
+for example::
+
+    (+ 1 {{2 + 4}}) ; -> 6
+    {{{b = 4}}}
+    b ; -> 4
+
+Note that you must still indent your Python code correctly. We're working on it.

@@ -1,0 +1,38 @@
+Syntax
+======
+
+The syntax of pylisp, like the syntax of lisps in general,
+is braindead-simple::
+
+    1
+    1.1
+    'a
+    "asdf"
+    ; This is a comment
+    ; BTW, 'a and "a" are completely identical in all ways
+    ; They create the same exact parse tree
+    #t
+    #f ;True and false
+    #0 ;None
+    
+    (+ 1 2) ; -> 3
+    (+ '(1 2) '(3 4)) ; -> (1 2 3 4)
+    (+ `(1 ,(+ 3 4)) '(1 ,(4 5))) ; -> (1 7 1 ,(4 5))
+    ; Note the different quote characters
+    
+    `(+ ,@(list 1 2 3 4 5 6)) ; -> (+ 1 2 3 4 5 6)
+    ; The comma-at splices the result of the expression into the current place
+    
+    {{1 + 2 * 3 / 4}} ; -> 2
+    ; This executes python code
+    
+    {{{b = 1}}}
+    ; This executes statements, but not inline (it returns #0)
+
+For more on the inline Python feature, see :doc:`python`.
+
+There's really nothing more to it. Well... at times, the ``.`` makes its appearance::
+
+    ((fn (a . b) b) 1 2 3 4 5) ; -> (2 3 4 5)
+
+But it's not quite part of the syntax -- it's just a special case in function signitures.
