@@ -19,7 +19,10 @@ def iftuple(s):
 class Lisp(object):
     def __init__(self, debug=False):
         bt = builtin.builtins.copy()
-        bt.update({"eval": self.eval, "atom?": self._atomp, "#import": self._import, "has": self._has, "#include": self._include, "pyeval": self._pyeval})
+        bt.update({"eval": self.eval, "atom?": self._atomp,
+            "#import": self._import, "has": self._has,
+            "#include": self._include, "pyeval": self._pyeval,
+            "pyexec": self._pyexec})
         self.vars = inheritdict.idict(None, **bt).push()
         self.macros = builtin.macros
         self.call_stack = [self]
@@ -129,6 +132,9 @@ class Lisp(object):
             
     def _pyeval(self, code):
         return eval(code, {}, self.vars)
+    
+    def _pyexec(self, code):
+        exec code in {}, self.vars
 
     def _atomp(self, var):
         return type(self.eval(var)) in map(type, [0L, 0, 0., ""])

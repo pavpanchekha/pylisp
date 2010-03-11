@@ -61,11 +61,20 @@ def eat_pyeval(s):
     if not s.startswith("{{"): return "", s
     
     i = 2
-    while i+1 < len(s) and s[i] != '}' and s[i+1] != "}":
+    while i+1 < len(s) and (s[i] != '}' or s[i+1] != "}"):
         i += 1
     
     return ["pyeval", ["'", s[2:i+1]]], s[i+3:]
 
+def eat_pyexec(s):
+    if not s.startswith("{{{"): return "", s
+    
+    i = 3
+    while i < len(s) and (s[i] != '}' or s[i+1] != "}" or s[i+2] != "}"):
+        i += 1
+    
+    return ["pyexec", ["'", s[3:i]]], s[i+3:]
+    
 def eat_value(s):
     s = s.strip()
     if len(s) == 0:
@@ -87,6 +96,8 @@ def eat_value(s):
         return [c, sexp], s
     elif s[0] == '"':
         return eat_str(s)
+    elif s.startswith("{{{"):
+        return eat_pyexec(s)
     elif s.startswith("{{"):
         return eat_pyeval(s)
     else:
