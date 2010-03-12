@@ -1,8 +1,11 @@
 (set!::macro 'def::macro (fn (name args . body)
     `(set!::macro ',name (fn ,args ,@body))))
 
-(def::macro def (name args . body)
-    `(set! ',name (fn ,args ,@body)))
+(#import::macro 'fntypes)
+(#import::macro 'importtypes)
+; Ok, now we've bootstrapped our way to a useable lisp!
+
+(import::macro blocktypes)
 
 (def::macro and (x y)
   `(if ,x ,y ,x))
@@ -10,20 +13,12 @@
 (def::macro or (x y)
   `(if ,x ,x ,y))
 
-(def or (x y)
-  (if x y x))
-
-(def and (x y)
-  (if x x y))
-
-(def xor (x y)
-     (or (and x (not y)) (and y (not x))))
+(def or (x y) (if x y x))
+(def and (x y) (if x x y))
+(def xor (x y) (!= (bool x) (bool y)))
 
 (def cadr (x) (car (cdr x)))
 (def cddr (x) (cdr (cdr x)))
-
-(def::macro let (vars . body)
-    `((fn ,(map car vars) ,@body) ,@(map cadr vars)))
 
 (def::macro ++ (var)
     `(set! ',var (+ ,var 1)))
@@ -35,36 +30,5 @@
     `(if (not ,expr)
         (signal '(error assertion) ',expr)))
 
-(def::macro while (test . body)
-    (let ((v1 (gensym)))
-      `(let ((,v1 (fn ()
-        (if ,test
-          (block
-            ,@body
-            (,v1))))))
-        (,v1))))
-
-(def::macro do-while (test . body)
-    (let ((v1 (gensym)))
-      `(let ((,v1 (fn ()
-        ,@body
-        (if ,test
-            ,v1))))
-        (,v1))))
-
-(def::macro for (vardef . body)
-    `(map (fn (,(car vardef)) ,@body)
-        ,(cadr vardef)))
-
-(def::macro class (name bases . body)
-    `(set! ',name (#class ,bases ,@body)))
-
 (def::macro control (name . args)
     `'(,name ,@args))
-
-(def::macro class::simple (name fields)
-    (let ((qfields (map (fn (x) `',x) fields)))
-        `(class ,name ()
-             (def::method __init__ ,fields
-                  ,@(for (qfield qfields)
-                         `(set! (:: self ,qfield) ,qfield))))))

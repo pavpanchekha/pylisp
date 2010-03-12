@@ -4,5 +4,4 @@
  - Make set! recognize [], car, cdr, etc
     - Make car, cdr macros?
  - Continuations?
- - Smaller stdlib
  - Smarter assertions

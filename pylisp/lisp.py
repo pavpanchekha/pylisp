@@ -17,6 +17,8 @@ def iftuple(s):
         return tuple(s)
 
 class Lisp(object):
+    run_stdlib = True
+
     def __init__(self, debug=False):
         bt = builtin.builtins.copy()
         bt.update({"eval": self.eval, "atom?": self._atomp, "#import": self._import, "has": self._has, "#include": self._include})
@@ -27,9 +29,11 @@ class Lisp(object):
         self._catches = {}
         self.debug = debug
 
-        self.run(info.lib("stdlib"))
-        self.run(info.lib("fntypes"))
-        self.run(info.lib("importtypes"))
+        if Lisp.run_stdlib:
+            Lisp.run_stdlib = False
+            self.run(info.lib("stdlib"))
+            Lisp.run_stdlib = True
+
         self.vars = self.vars.push()
 
     def run(self, s):
