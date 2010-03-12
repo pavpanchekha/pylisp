@@ -1,3 +1,8 @@
  - Optional arguments & keyword arguments?
- - Make setting in a scope bubble down
+ - Make set!ting in a scope bubble down
  - (return) fails inside loops
+ - Make set! recognize [], car, cdr, etc
+    - Make car, cdr macros?
+ - Continuations?
+ - Smaller stdlib
+ - Smarter assertions

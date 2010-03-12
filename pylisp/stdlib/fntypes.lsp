@@ -9,8 +9,3 @@
 (def::macro def::method (name args . body)
     `(def ,name ,(cons 'self args) ,@body))
 
-(def::macro class (name bases . body)
-    `(set! ',name (#class ,bases ,@body)))
-
-(def::macro control (name . args)
-    `'(,name ,@args))

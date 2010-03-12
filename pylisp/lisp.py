@@ -294,10 +294,10 @@ class Lisp(object):
         if not isinstance(tree, list) or len(tree) == 0:
             return [tree]
         elif tree[0] == ",":
-            c = [self.eval(tree[1])]
+            c = [self.run([tree[1]])]
             return c
         elif tree[0] == ",@":
-            return self.eval(tree[1])
+            return self.run([tree[1]])
         else:
             return [sum(map(self.quasieval, tree), [])]
 

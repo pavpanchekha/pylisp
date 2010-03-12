@@ -1,7 +1,9 @@
 
 arglengths = {
-        "if": 1, "def": 2, "class": 2, "fn": 1,
-        "set!": 1, "handle": 1
+        "if": 1, "def": 2, "def::method": 2,
+        "def::static": 2, "def::class": 2,
+        "class::simple": 2,
+        "class": 2, "fn": 1, "set!": 1, "handle": 1
     }
 
 def str_(v, breakline=False, indent=0):

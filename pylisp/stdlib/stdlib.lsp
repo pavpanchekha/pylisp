@@ -55,3 +55,16 @@
 (def::macro for (vardef . body)
     `(map (fn (,(car vardef)) ,@body)
         ,(cadr vardef)))
+
+(def::macro class (name bases . body)
+    `(set! ',name (#class ,bases ,@body)))
+
+(def::macro control (name . args)
+    `'(,name ,@args))
+
+(def::macro class::simple (name fields)
+    (let ((qfields (map (fn (x) `',x) fields)))
+        `(class ,name ()
+             (def::method __init__ ,fields
+                  ,@(for (qfield qfields)
+                         `(set! (:: self ,qfield) ,qfield))))))
