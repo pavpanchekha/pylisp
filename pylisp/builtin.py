@@ -78,7 +78,8 @@ _t = {"+": foldable(operator.add, 0), "-": subtract, "*": foldable(operator.mul,
         "mod": operator.mod, "list": lambda *args: list(args),
         "static-method": staticmethod, "class-method": classmethod,
         "callable?": callable, "raw_input": input, "#property": property,
-        "sort": sorted, "help": help, "dict": dict_}
+        "sort": sorted, "help": help, "dict": dict_,
+        "in": operator.contains,}
 
 for name, fn in _t.items():
     lispfunc(name)(fn)
