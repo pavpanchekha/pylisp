@@ -1,4 +1,4 @@
-import parser
+import sexp as parser
 import inheritdict
 import builtin
 import info
@@ -21,7 +21,10 @@ class Lisp(object):
 
     def __init__(self, debug=False):
         bt = builtin.builtins.copy()
-        bt.update({"eval": self.eval, "atom?": self._atomp, "#import": self._import, "has": self._has, "#include": self._include})
+        bt.update({"eval": self.eval, "atom?": self._atomp,
+            "#import": self._import, "has": self._has,
+            "#include": self._include, "pyeval": self._pyeval,
+            "pyexec": self._pyexec})
         self.vars = inheritdict.idict(None, **bt).push()
         self.macros = builtin.macros
         self.call_stack = [self]
@@ -130,6 +133,12 @@ class Lisp(object):
             return var in self.vars
         else:
             return hasattr(var, arg)
+            
+    def _pyeval(self, code):
+        return eval(code, {}, self.vars)
+    
+    def _pyexec(self, code):
+        exec code in {}, self.vars
 
     def _atomp(self, var):
         return type(self.eval(var)) in map(type, [0L, 0, 0., ""])
