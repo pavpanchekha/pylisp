@@ -6,6 +6,7 @@ class idict:
 
         self.parent = parent
         self.dict = odict
+        self.stop = False
 
     def __getitem__(self, item):
         if item in self.dict:
@@ -14,7 +15,10 @@ class idict:
             return self.parent[item]
 
     def __setitem__(self, item, value):
-        self.dict[item] = value
+        if self.stop or item not in self.parent:
+            self.dict[item] = value
+        else:
+            self.parent[item] = value
 
     def __delitem__(self, item):
         if item in self.dict:

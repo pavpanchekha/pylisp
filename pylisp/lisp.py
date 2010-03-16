@@ -38,6 +38,7 @@ class Lisp(object):
             Lisp.run_stdlib = True
 
         self.vars = self.vars.push()
+        self.vars.stop = True
 
     def run(self, s):
         global sexp

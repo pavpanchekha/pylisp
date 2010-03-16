@@ -1,5 +1,4 @@
  - Optional arguments & keyword arguments?
- - Make set!ting in a scope bubble down
  - (return) fails inside loops
  - Make set! recognize [], car, cdr, etc
     - Make car, cdr macros?
