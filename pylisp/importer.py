@@ -45,6 +45,8 @@ class Loader(object):
             del sys.modules[name]
             raise
 
+        if preprocess_only:
+            mod.__dict__["#preprocess-only"] = True
         self.correct_parent_pkg(mod)
         return mod
 

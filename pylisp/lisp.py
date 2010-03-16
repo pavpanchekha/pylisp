@@ -120,6 +120,10 @@ class Lisp(object):
     def _import(self, *args):
         args = list(args)
         modname = ".".join(args)
+
+        if modname in sys.modules:
+            if sys.modules[modname].__dict__.get("#preprocess-only", False):
+                del sys.modules[modname]
         __import__(modname)
         return sys.modules[modname]
 
