@@ -5,7 +5,7 @@ import info
 import importer
 
 import sys
-sys.setrecursionlimit(1000)
+sys.setrecursionlimit(100000)
 
 class ReturnI(Exception): pass
 class BeReturnedI(Exception): pass
