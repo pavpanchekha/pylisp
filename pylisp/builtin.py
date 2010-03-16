@@ -26,10 +26,30 @@ def foldable(f, default = None):
 
 # -----------------------------------------
 
-def car(l): return l[0]
-def cdr(l): return l[1:]
-def last(l): return l[-1]
-def cons(a, b): return [a] + b
+def car(l):
+    if not isinstance(l, str):
+        return l[0]
+    else:
+        raise TypeError("Cannot take `car` of a list")
+
+def cdr(l):
+    if not isinstance(l, str):
+        return l[1:] 
+    else:
+        raise TypeError("Cannot take `cons` of a list")
+
+def last(l):
+    if not isinstance(l, str):
+        return l[-1] 
+    else:
+        raise TypeError("Cannot take `last` of a list")
+
+def cons(a, b):
+    if not isinstance(b, str):
+        return [a] + b
+    else:
+        raise TypeError("Cannot `cons` onto a string")
+
 def dict_(*args): return dict(args)
 
 @lispfunc("gensym")
