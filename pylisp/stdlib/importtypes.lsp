@@ -20,7 +20,7 @@
     `(#import::macro ,@(map quoted args)))
 
 (def::macro use (. args)
-    `(block (import ,@args) (import::macro ,@args)))
+    `(block (import::macro ,@args) (import ,@args)))
 
 (def::macro map::macro (f l)
     `(block ,@(map (fn (x) (list f x)) l)))
