@@ -21,7 +21,7 @@ class Lisp(object):
 
     def __init__(self, debug=False):
         bt = builtin.builtins.copy()
-        bt.update({"eval": self.eval, "atom?": self._atomp,
+        bt.update({"eval": lambda *args: self.run(args), "atom?": self._atomp,
             "#import": self._import, "has": self._has,
             "#include": self._include, "pyeval": self._pyeval,
             "pyexec": self._pyexec})
@@ -47,12 +47,16 @@ class Lisp(object):
             sexps = parser.parse(s)
         else:
             sexps = s
-        sexps = self.preprocess(sexps)
+
+        sexps = map(self.preprocess, sexps)
 
         out = None
         for expr in sexps:
             out = self.eval(expr)
         return out
+
+    def runone(self, s):
+        return self.run([s])
 
     def preprocess(self, tree):
         import random
@@ -100,7 +104,7 @@ class Lisp(object):
                 self.preprocess_flag = True
             tree[:] = []
         elif tree[0] == "block::macro":
-            map(self.run, tree[1:])
+            self.run(tree[1:])
             self.preprocess_flag = True
             tree[:] = []
         elif isinstance(tree[0], str) and tree[0] in self.macros:
@@ -146,7 +150,7 @@ class Lisp(object):
         exec code in {}, self.vars
 
     def _atomp(self, var):
-        return type(self.eval(var)) in map(type, [0L, 0, 0., ""])
+        return not isinstance(var, list)
 
     def _if(self, test, true, false=None):
         if self.eval(test):
@@ -241,7 +245,7 @@ class Lisp(object):
     def _signal(self, type, *args):
         l = self.eval(type)
         type = iftuple(l)
-        args = map(self.run, args)
+        args = map(self.runone, args)
         signal = builtin.signal(l, *args)
 
         for i, f in enumerate(reversed(self.call_stack)):
@@ -276,7 +280,6 @@ class Lisp(object):
             sys.exit()
         else:
             raise SyntaxError("Received non-control-word return value from signal handler")
-
 
     builtindict = {"if": _if, "set!": _set,
         "fn": _fn, "block": _block, "#class": _class,

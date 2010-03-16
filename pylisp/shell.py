@@ -17,7 +17,7 @@ def handle_error(err):
     for i in l.call_stack:
         print "\t%s" % builtin.str_(i)
     print "Error:", err
-    return ["exit"]
+    return ["bubble"]
 l.call_stack[0]._catches[("error",)] = handle_error
 
 warn_cache = dict()
@@ -39,6 +39,8 @@ def run(s, silent=True):
     
     try:
         v = l.run(s)
+    except lisp.BeReturnedI, e:
+        pass
     except Exception, e:
         traceback.print_exc()
     else:
