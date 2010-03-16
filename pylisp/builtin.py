@@ -90,7 +90,13 @@ def subtract(*args):
     else:
         return foldable(operator.sub)(*args)
 
-_t = {"+": foldable(operator.add, 0), "-": subtract, "*": foldable(operator.mul, 1),
+@lispfunc("read")
+def read(s=""):
+    import sexp
+    v = raw_input(s)
+    return sexp.parse(v)
+
+_t = {"+": foldable(operator.add, 0), "*": foldable(operator.mul, 1),
         "/": foldable(operator.truediv), "^": operator.pow, "=": operator.eq,
         "!=": operator.ne, "<": operator.lt, ">": operator.gt, "<=": operator.le,
         ">=": operator.ge, "not": operator.not_, "conj": operator.invert,
@@ -99,7 +105,7 @@ _t = {"+": foldable(operator.add, 0), "-": subtract, "*": foldable(operator.mul,
         "static-method": staticmethod, "class-method": classmethod,
         "callable?": callable, "raw_input": input, "#property": property,
         "sort": sorted, "help": help, "dict": dict_,
-        "in": operator.contains,}
+        "in": operator.contains, "input": raw_input}
 
 for name, fn in _t.items():
     lispfunc(name)(fn)
