@@ -32,6 +32,7 @@ class Lisp(object):
         self._catches = {}
         self.debug = debug
 
+        self.run(info.lib("basics"))
         if Lisp.run_stdlib:
             Lisp.run_stdlib = False
             self.run(info.lib("stdlib"))
