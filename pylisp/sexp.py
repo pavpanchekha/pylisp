@@ -64,7 +64,7 @@ def eat_pyeval(s):
     while i+1 < len(s) and (s[i] != '}' or s[i+1] != "}"):
         i += 1
     
-    return ["pyeval", ["'", s[2:i]]], s[i+3:]
+    return ["pyeval", ["'", s[2:i]]], s[i+2:]
 
 def eat_pyexec(s):
     if not s.startswith("{{{"): return "", s
