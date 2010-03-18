@@ -1,10 +1,5 @@
-
-(def I (x) x)
-
-(def K (x)
-     (fn (y) x))
-
+(set! 'I {x:x})
+(def K (x) {y:x})
 (def S (n)
-     (fn (f)
-         (fn (x)
-             (f ((n f) x)))))
+     {x: {y: {z:
+        ((x z) (y z))}}})
