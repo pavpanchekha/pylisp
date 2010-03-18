@@ -29,6 +29,14 @@ is braindead-simple::
     {{{b = 1}}}
     ; This executes statements, but not inline (it returns #0)
 
+    {x: (f x)}
+    ; Equivalent to (fn (x) (f x))
+    {x y z: (* x y x z)}
+    ; Equivalent to (fn (x y z) (* x y x z))
+    (((((({:{:{:{:{:{:}}}}}}))))))
+    ; Yes, this is legal, and it returns #0.
+    ; Never write code like this
+
 For more on the inline Python feature, see :doc:`python`.
 
 There's really nothing more to it. Well... at times, the ``.`` makes its appearance::
@@ -36,3 +44,21 @@ There's really nothing more to it. Well... at times, the ``.`` makes its appeara
     ((fn (a . b) b) 1 2 3 4 5) ; -> (2 3 4 5)
 
 But it's not quite part of the syntax -- it's just a special case in function signitures.
+
+Implementation
+--------------
+Most of the syntax is normalized to standard s-expressions
+during parsing; that is, the output of the parser is pure
+s-expression. For example, the output of the parser for
+``{x:x}`` is ``(fn (x) x)``.
+
+Deep down, the quote, quasiquote, and comma operators are
+implemented as special forms matching the respective
+punctuation characters. Thus, one can do::
+
+    (set! "," {x:5})
+    ,x ; Yields 5
+
+But you should never, ever, ever redefine comma. Due to
+specifics in the implementation, it is impossible to
+redefine quote and quasiquote.
