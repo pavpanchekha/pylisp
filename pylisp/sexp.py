@@ -173,11 +173,17 @@ def eat_pyexec(s):
     return ["pyexec", ["'", s[3:i]]], s[i+3:]
 
 def eat_function(s):
-    """
+    r"""
     Syntax of inline function: {x y z: (* x y x z)}
 
     >>> eat_function("{x y z: (* x y x z) 'a}; comment")
     (['fn', ['x', 'y', 'z'], ['*', 'x', 'y', 'x', 'z'], ["'", 'a']], '; comment')
+    >>> eat_function("{:}")
+    (['fn', []], '')
+    >>> eat_function("{:\nstuff}")
+    (['fn', [], 'stuff'], '')
+    >>> eat_function("{,a:}")
+    (['fn', [[',', 'a']]], '')
     """
 
     if s[0] != "{": return "", s
@@ -185,11 +191,11 @@ def eat_function(s):
     i = s.find(":")
     if not i: raise SyntaxError("No end to function definition")
 
-    vars = s[1:i].split()
+    vars = map(lambda x: eat_value(x)[0], s[1:i].split())
     body = []
 
     s = s[i+1:].strip()
-    while s != "" and s[0] != "}":
+    while s[0] != "}":
         sexp, s = eat_value(s)
         if sexp:
             s = s.strip()

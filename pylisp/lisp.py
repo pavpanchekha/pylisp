@@ -1,36 +1,27 @@
 import sexp as parser
 import inheritdict
 import builtin
+import specialforms
 import info
 import importer
 
 import sys
 sys.setrecursionlimit(100000)
 
-class ReturnI(Exception): pass
-class BeReturnedI(Exception): pass
-            
-def iftuple(s):
-    if isinstance(s, str):
-        return (s,)
-    else:
-        return tuple(s)
+debug = 0
 
 class Lisp(object):
     run_stdlib = True
 
-    def __init__(self, debug=False):
+    def __init__(self):
         bt = builtin.builtins.copy()
-        bt.update({"eval": lambda *args: self.run(args), "atom?": self._atomp,
-            "#import": self._import, "has": self._has,
-            "#include": self._include, "pyeval": self._pyeval,
-            "pyexec": self._pyexec})
+        bt.update(specialforms.specialforms)
+        bt.update({"eval": lambda *args: self.run(args)})
         self.vars = inheritdict.idict(None, **bt).push()
         self.macros = builtin.macros
         self.call_stack = [self]
         self._lispprint = lambda: "#main"
         self._catches = {}
-        self.debug = debug
 
         self.run(info.lib("basics"))
         if Lisp.run_stdlib:
@@ -63,7 +54,7 @@ class Lisp(object):
         import random
         c = random.randint(1, 1000)
 
-        if self.debug:
+        if debug:
             print c,
             builtin.print_(tree)
 
@@ -72,7 +63,7 @@ class Lisp(object):
             self.preprocess_flag = False
             self.preprocess_(tree)
         
-        if self.debug:
+        if debug:
             print c,
             builtin.print_(tree)
 
@@ -119,174 +110,11 @@ class Lisp(object):
         for i in tree:
             self.preprocess_(i)
 
-    def _return(self, arg=[]):
-        raise ReturnI(arg)
-
-    def _import(self, *args):
-        args = list(args)
-        modname = ".".join(args)
-
-        if modname in sys.modules:
-            if sys.modules[modname].__dict__.get("#preprocess-only", False):
-                del sys.modules[modname]
-        __import__(modname)
-        return sys.modules[modname]
-
-    def _include(self, *args):
-        args = list(args)
-        modname = ".".join(args)
-        __import__(modname)
-        self.vars.dict.update(sys.modules[modname].__dict__)
-
-    def _has(self, var, arg=None):
-        if arg is None:
-            return var in self.vars
-        else:
-            return hasattr(var, arg)
-            
-    def _pyeval(self, code):
-        return eval(code, {}, self.vars)
-    
-    def _pyexec(self, code):
-        exec code in {}, self.vars
-
-    def _atomp(self, var):
-        return not isinstance(var, list)
-
-    def _if(self, test, true, false=None):
-        if self.eval(test):
-            return self.eval(true)
-        elif false:
-            return self.eval(false)
-
-    def _fn(self, sig, *body):
-        if isinstance(body, tuple):
-            body = list(body)
-        if isinstance(sig, str):
-            sig = [".", sig]
-        if any(not isinstance(x, str) for x in sig):
-            raise SyntaxError("Arguments to function must just be identifiers")
-        
-        if "." in sig:
-            many_name = sig[sig.index(".") + 1]
-            sig[sig.index("."):] = []
-        else:
-            many_name = None
-        
-        
-        def llambda(*args):
-            args = list(args)
-            vars = dict(zip(sig, args))
-
-            if many_name is not None:
-                vars[many_name] = args[len(sig):]
-
-            self.vars = inheritdict.idict(self.vars, llambda._vars).push(vars)
-            self.call_stack.append(llambda)
-            try:
-                out = self.run(body)
-                return out
-            except ReturnI, e:
-                return e.args[0]
-            finally:
-                self.call_stack.pop()
-                self.vars = self.vars.pop().pop()
-
-        llambda._vars = self.vars
-        llambda._catches = {}
-        llambda.__name__ = ""
-        return llambda
-
-    def _class(self, inheritfrom, *body):
-        d = {}
-        self.vars = inheritdict.idict(self.vars, d)
-
-        try:
-            self.eval(["block"] + list(body))
-            
-            if "__init__" in d:
-                k = d["__init__"]
-                def __init__(*args, **kwargs):
-                    k(*args, **kwargs)
-                d["__init__"] = __init__
-            
-            if "__div__" in d:
-                d["__truediv__"] = d["__div__"]
-        
-            bases = map(self.eval, inheritfrom)
-            return type("", tuple(bases), d)
-        finally:
-            self.vars = self.vars.pop()
-
-    def _set(self, name, value):
-        value = self.eval(value)
-        if not isinstance(name, list):
-            raise SyntaxError("What the hell are you trying to set?")
-        elif name[0] == "'" and isinstance(name[1], str):
-            self.vars[name[1]] = value
-            if callable(value): value.__name__ = name[1]
-        elif name[0] == "::":
-            setattr(self.eval(["::", name[:-1]]), self.eval(name[-1]), self.eval(value))
-        else:
-            raise SyntaxError("What the hell are you trying to set?")
-
-        return value
-
-    def _block(self, *exprs):
-        if exprs:
-            return map(self.eval, exprs)[-1]
-
-    def _handle(self, type, handler):
-        type = iftuple(self.eval(type))
-        handler = self.eval(handler)
-    
-        f = self.call_stack[-1]
-        f._catches[type] = handler
-
-    def _signal(self, type, *args):
-        l = self.eval(type)
-        type = iftuple(l)
-        args = map(self.runone, args)
-        signal = builtin.signal(l, *args)
-
-        for i, f in enumerate(reversed(self.call_stack)):
-            ttype = type[:]
-            while ttype and ttype not in f._catches:
-                ttype = ttype[:-1]
-            if ttype:
-                break
-        else:
-            raise signal
-        
-        handler = f._catches[ttype]
-        control = handler(signal)
-
-        if len(control) == 1:
-            control[1:] = [None]
-
-        if control[0] == "return":
-            raise ReturnI(control[1])
-        elif control[0] == "ignore":
-            return control[1]
-        elif control[0] == "bubble":
-            raise BeReturnedI(i, control[1])
-        elif control[0] == "debug":
-            import sys, traceback
-            traceback.print_exc()
-            sys.exit()
-        elif control[0] == "exit":
-            import sys
-            if len(control) > 1:
-                print control[1]
-            sys.exit()
-        else:
-            raise SyntaxError("Received non-control-word return value from signal handler")
-
-    builtindict = {"if": _if, "set!": _set,
-        "fn": _fn, "block": _block, "#class": _class,
-        "signal": _signal, "handle": _handle}
-
     def eval(self, tree):
+        if debug > 1:
+            print "Eval'ing::",
+            builtin.print_(tree)
+
         if isinstance(tree, str):
             if tree in self.vars:
                 return self.vars[tree]
@@ -296,23 +124,31 @@ class Lisp(object):
             return tree
         elif len(tree) == 0:
             return None
-        elif isinstance(tree[0], str) and tree[0] in self.builtindict:
-            return self.builtindict[tree[0]](self, *tree[1:])
         elif tree[0] == "'":
             return tree[1]
         elif tree[0] == "`":
             return self.quasieval(tree[1])[0]
-        else:
-            tree2 = map(self.eval, tree)
-            try:
-                return tree2[0](*tree2[1:])
-            except BeReturnedI, e:
-                if len(self.call_stack) == e.args[0]:
-                    return e.args[1]
-                else:
-                    raise
+        
+        func = self.eval(tree[0])
+
+        try:
+            if hasattr(func, "_fexpr") and func._fexpr == True:
+                return func(self, *tree[1:])
+            elif hasattr(func, "_specialform"):
+                return func(self, *map(self.eval, tree[1:]))
+            else:
+                return func(*map(self.eval, tree[1:]))
+        except specialforms.BeReturnedI, e:
+            if len(self.call_stack) == e.args[0]:
+                return e.args[1]
+            else:
+                raise
 
     def quasieval(self, tree):
+        if debug > 1:
+            print "Quasieval'ing::",
+            builtin.print_(tree)
+
         if not isinstance(tree, list) or len(tree) == 0:
             return [tree]
         elif tree[0] == ",":

@@ -1,4 +1,15 @@
-class idict:
+class _Cachelink(object):
+    def __init__(self, var, dict):
+        self._var = var
+        self._dict = dict
+
+        if isinstance(self._dict[self._var], _Cachelink):
+            self._dict = self._dict[self._var]._dict
+
+    def value(self):
+        return self._dict[self._var]
+
+class idict(object):
     def __init__(self, parent=None, odict=None, **kwargs):
         if parent is None:
             parent = {}
