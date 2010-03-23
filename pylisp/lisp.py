@@ -6,7 +6,7 @@ import info
 import importer
 
 import sys
-sys.setrecursionlimit(100000)
+sys.setrecursionlimit(100000) # It's lisp! It must recurse!
 
 debug = 0
 
@@ -17,8 +17,10 @@ class Lisp(object):
         bt = builtin.builtins.copy()
         bt.update(specialforms.specialforms)
         bt.update({"eval": lambda *args: self.run(args)})
-        self.vars = inheritdict.idict(None, **bt).push()
-        self.macros = builtin.macros
+
+        self.vars = inheritdict.idict(None, bt).push()
+
+        self.macros = {}
         self.call_stack = [self]
         self._lispprint = lambda: "#main"
         self._catches = {}
@@ -26,51 +28,29 @@ class Lisp(object):
         self.run(info.lib("basics"))
         if Lisp.run_stdlib:
             Lisp.run_stdlib = False
-            self.run(info.lib("stdlib"))
+            self.run(info.lib("stdlib")) # Assuming no error
             Lisp.run_stdlib = True
 
         self.vars = self.vars.push()
         self.vars.stop = True
 
-    def run(self, s):
-        global sexp
-
-        if isinstance(s, str):
-            sexps = parser.parse(s)
-        else:
-            sexps = s
-
-        sexps = map(self.preprocess, sexps)
-
-        out = None
-        for expr in sexps:
-            out = self.eval(expr)
-        return out
-
-    def runone(self, s):
-        return self.run([s])
+    def run(self, s, mult=True):
+        if isinstance(s, str): s = parser.parse(s)
+        if not mult: s = [s]
+        sexps = map(self.preprocess, s)
+        return map(self.eval, s)[-1]
 
     def preprocess(self, tree):
-        import random
-        c = random.randint(1, 1000)
-
-        if debug:
-            print c,
-            builtin.print_(tree)
-
         self.preprocess_flag = True
         while self.preprocess_flag:
             self.preprocess_flag = False
             self.preprocess_(tree)
-        
         if debug:
-            print c,
             builtin.print_(tree)
-
         return tree
 
     def preprocess_(self, tree):
-        if not isinstance(tree, list) or len(tree) == 0: return
+        if not isinstance(tree, list) or len(tree) == 0 or tree[0] in ("'", "`"): return
         elif tree[0] == "set!::macro":
             name = self.eval(tree[1])
             fn = self.eval(tree[2])
@@ -81,8 +61,6 @@ class Lisp(object):
             ret = self.macros[name]
             tree[:] = []
             return ret
-        elif tree[0] in ("'", "`"):
-            return
         elif tree[0] == "#import::macro":
             modname = ".".join(map(self.eval, tree[1:]))
             importer.preprocess_only = True
@@ -124,10 +102,6 @@ class Lisp(object):
             return tree
         elif len(tree) == 0:
             return None
-        elif tree[0] == "'":
-            return tree[1]
-        elif tree[0] == "`":
-            return self.quasieval(tree[1])[0]
         
         func = self.eval(tree[0])
 

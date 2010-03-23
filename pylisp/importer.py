@@ -63,8 +63,8 @@ class Loader(object):
 
     def eval(self, path):
         if preprocess_only:
-            import parser
-            self.l.preprocess(parser.parse(open(path).read()))
+            import sexp
+            self.l.preprocess(sexp.parse(open(path).read()))
         else:
             self.l.run(open(path).read())
 

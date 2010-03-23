@@ -6,3 +6,5 @@
 (set! 'cadr  {x: (car (cdr x))})
 (set! 'cddr  {x: (cdr (cdr x))})
 
+(set!::macro 'def::macro (fn (name args . body)
+    `(set!::macro ',name (fn ,args ,@body))))

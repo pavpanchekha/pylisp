@@ -58,6 +58,8 @@ def set(self, name, value):
         if callable(value): value.__name__ = name[1]
     elif name[0] == "::":
         setattr(self.eval(["::", name[:-1]]), self.eval(name[-1]), self.eval(value))
+    elif name[0] == "[]":
+        self.eval(name[1])[self.eval(name[2])] = value
     else:
         raise SyntaxError("What the hell are you trying to set?")
     return value
@@ -128,12 +130,8 @@ def _return(self, arg=[]):
 
 @lispfunc("fn", True)
 def fn(self, sig, *body):
-    if isinstance(body, tuple):
-        body = list(body)
-    if isinstance(sig, str):
-        sig = [".", sig]
-    if any(not isinstance(x, str) for x in sig):
-        raise SyntaxError("Arguments to function must just be identifiers")
+    if isinstance(body, tuple): body = list(body)
+    if isinstance(sig, str): sig = [".", sig]
     
     if "." in sig:
         many_name = sig[sig.index(".") + 1]
@@ -141,19 +139,16 @@ def fn(self, sig, *body):
     else:
         many_name = None
     
-    
     def llambda(*args):
-        args = list(args)
         vars = dict(zip(sig, args))
 
         if many_name is not None:
-            vars[many_name] = args[len(sig):]
+            vars[many_name] = list(args)[len(sig):]
 
         self.vars = inheritdict.idict(self.vars, llambda._vars).push(vars)
         self.call_stack.append(llambda)
         try:
-            out = self.run(body)
-            return out
+            return self.run(body)
         except ReturnI, e:
             return e.args[0]
         finally:
@@ -187,3 +182,10 @@ def _class(self, inheritfrom, *body):
     finally:
         self.vars = self.vars.pop()
 
+@lispfunc("'", True)
+def quote(self, arg):
+    return arg
+
+@lispfunc("`", True)
+def quasiquote(self, arg):
+    return self.quasieval(arg)[0]

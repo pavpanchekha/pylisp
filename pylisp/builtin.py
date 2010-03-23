@@ -3,7 +3,6 @@ import prettyprinter
 import sys
 
 builtins = {"nil": [], "#t": True, "#f": False, "#0": None}
-macros = {}
 
 def lispfunc(name):
     def decorator(f):

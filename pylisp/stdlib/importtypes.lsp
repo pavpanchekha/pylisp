@@ -1,23 +1,14 @@
 
 (def::macro import (. args)
-    (def quoted (x)
-        `',x)
-
-    `(set! ',(last args) (#import ,@(map quoted args))))
+    `(set! ',(last args) (#import ,@(map {x: `',x} args))))
 
 (def::macro include (. args)
-    (def quoted (x)
-        `',x)
-    
     `(block
-       (#include ,@(map quoted args))
-       (#import::macro ,@(map quoted args))))
+       (#include ,@(map {x: `',x} args))
+       (#import::macro ,@(map {x: `',x} args))))
 
 (def::macro import::macro (. args)
-    (def quoted (x)
-        `',x)
-
-    `(#import::macro ,@(map quoted args)))
+    `(#import::macro ,@(map {x: `',x} args)))
 
 (def::macro use (. args)
     `(block (import::macro ,@args) (import ,@args)))

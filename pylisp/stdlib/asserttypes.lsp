@@ -1,9 +1,3 @@
-(def assert::= (. exprs) exprs)
-(set! 'assert::!= assert::=)
-(set! 'assert::> assert::=)
-(set! 'assert::< assert::=)
-(set! 'assert::<= assert::=)
-(set! 'assert::>= assert::=)
 
 (def::macro assert (expr)
     `(if (not ,expr)

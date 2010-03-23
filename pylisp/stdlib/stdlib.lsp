@@ -1,5 +1,3 @@
-(set!::macro 'def::macro (fn (name args . body)
-    `(set!::macro ',name (fn ,args ,@body))))
 
 (#import::macro 'fntypes)
 (#import::macro 'importtypes)
