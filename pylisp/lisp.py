@@ -38,7 +38,7 @@ class Lisp(object):
         if isinstance(s, str): s = parser.parse(s)
         if not mult: s = [s]
         sexps = map(self.preprocess, s)
-        return map(self.eval, s)[-1]
+        return map(self.eval, s)[-1] if s else None
 
     def preprocess(self, tree):
         self.preprocess_flag = True

@@ -75,7 +75,7 @@ def print_(*args):
     for v in args:
         print "\n".join(prettyprinter.str_(v, breakline=True)),
     print
-    return args[-1]
+    return args[-1] if args else None
 
 @lispfunc("str")
 def str_(v):
