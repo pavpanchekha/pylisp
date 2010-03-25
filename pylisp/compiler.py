@@ -11,12 +11,13 @@ class Compiler(object):
         self.intp = lisp.Lisp()
         del self.intp.macros["while"]
         del self.intp.macros["for"]
+        del self.intp.macros["def"]
         self.context = self.intp.vars
         self.interactive = interactive
 
     def run(self, s):
         c = self.compile(s)
-        if debug: dis.dis(c)
+        if debug > -1: dis.dis(c)
         return Environment(c, self.context)()
 
     def compile(self, s):
@@ -69,8 +70,19 @@ class Compiler(object):
             iter = self._toexpr(tree[1][1])
             body = map(self._tostmt, tree[2:])
             return ast.For(target, iter, body, [])
-        elif tree[0] == "print":
-            return ast.Print(None, map(self._toexpr, tree[1:]), True)
+        #elif tree[0] == "print":
+            #return ast.Print(None, map(self._toexpr, tree[1:]), True)
+        elif tree[0] == "def":
+            name = tree[1]
+            args = tree[2]
+            if "." in args:
+                stargs = args[args.index(".")+1]
+                args = args[:args.index(".")]
+            else:
+                stargs = None
+            body = map(self._tostmt, tree[3:])
+            return ast.FunctionDef(name, ast.arguments(map(lambda x: ast.Name(x, ast.Param()), args), stargs, None, []), body, [])
+
         else:
             return ast.Expr(self._toexpr(tree))
 
@@ -120,6 +132,8 @@ class Compiler(object):
                 return self._toexpr(tree[1])
             elif isinstance(tree[1], str):
                 return ast.Str(tree[1])
+        elif tree[0] == "for":
+            return self._toexpr(["map", ["fn", [tree[1][0]]] + tree[2:], tree[1][1]])
         elif isinstance(tree, list) and tree:
             return ast.Call(self._toexpr(tree[0]),
                     map(self._toexpr, tree[1:]), [],
