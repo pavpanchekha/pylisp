@@ -237,15 +237,15 @@ def eat_value(s):
         return eat_function(s)
     else:
         sexp, s = eat_name(s)
-        if sexp in ("#t", "#f"):
-            sexp = {"#t": True, "#f": False}[sexp]
+        if sexp in ("#t", "#f", "#0"):
+            sexp = {"#t": True, "#f": False, "#0": None}[sexp]
         return sexp, s
 
 def parse(s):
     tree = []
     while s != "":
         sexp, s = eat_value(s)
-        if sexp:
+        if sexp is not "":
             s = s.strip()
             tree.append(sexp)
     return tree
