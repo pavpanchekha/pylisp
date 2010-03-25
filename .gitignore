@@ -6,3 +6,5 @@ Pylisp.egg-info
 docs/.build
 docs/Makefile
 docs/make.bat
+pip-log.txt
+build
