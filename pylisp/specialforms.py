@@ -27,6 +27,13 @@ def pyeval(self, code):
 def pyexec(self, code):
     exec code in {}, self.vars
 
+@lispfunc("compile")
+def plcompile(self, *code):
+    import compiler
+    c = compiler.Compiler()
+    compiler.context = self.vars
+    return c.run(code)
+
 @lispfunc("has")
 def has(self, var, arg=None):
     if arg is None:

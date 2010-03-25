@@ -75,10 +75,17 @@ def main():
 
     if "-d" in args:
         i = args.index("-d")
-        lisp.debug = int(args[i+1])
-        args = args[:i] + args[i+2:]
+        if len(args) > i + 1:
+            lisp.debug = int(args[i+1])
+            args = args[:i] + args[i+2:]
+        else:
+            lisp.debug = 1
+            args = args[:-1]
     else:
-        lisp.debug = 0
+        pass
+
+    import compiler
+    compiler.debug = lisp.debug
     
     if len(args) > 1:
         for f in args[1:]:

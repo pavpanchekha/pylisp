@@ -8,7 +8,7 @@ import importer
 import sys
 sys.setrecursionlimit(100000) # It's lisp! It must recurse!
 
-debug = 0
+debug = -1
 
 class Lisp(object):
     run_stdlib = True
@@ -45,7 +45,7 @@ class Lisp(object):
         while self.preprocess_flag:
             self.preprocess_flag = False
             self.preprocess_(tree)
-        if debug:
+        if debug > 0:
             builtin.print_(tree)
         return tree
 
