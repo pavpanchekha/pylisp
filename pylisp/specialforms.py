@@ -21,11 +21,11 @@ def lispfunc(name, fexpr=False):
 
 @lispfunc("pyeval")
 def pyeval(self, code):
-    return eval(code, {}, self.vars)
+    return eval(code, self.vars.dict, self.vars.parent)
 
 @lispfunc("pyexec")
 def pyexec(self, code):
-    exec code in {}, self.vars
+    exec code in self.vars.dict, self.vars.parent
 
 @lispfunc("compile")
 def plcompile(self, *code):
