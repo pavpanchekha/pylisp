@@ -23,11 +23,14 @@ class Compiler(object):
         self.interactive = interactive
 
     def run(self, s):
-        c = self.compile(s)
-        if debug > -1: dis.dis(c)
-        return Environment(c, self.context)()
+        return self.compile(s)()
 
     def compile(self, s):
+        c = self._compile(s)
+        if debug > -1: dis.dis(c)
+        return Environment(c, self.context)
+
+    def _compile(self, s):
         if isinstance(s, str): s = parser.parse(s)
         s = self.intp.preprocess(s)
         a = map(self._tostmt, s)

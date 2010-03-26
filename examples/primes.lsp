@@ -27,9 +27,9 @@ for i in range(primes[-1], 1000, 2):
 
 (print 'Compiled (set! '*compiled-time*
        (time
-         (compile
-           '(set! '*primes* '(2 3))
-           '(for (i (range (last *primes*) 1000 2))
+         (compiled
+           (set! '*primes* '(2 3))
+           (for (i (range (last *primes*) 1000 2))
              (set! 'append? #t)
              (for (p *primes*)
                (if (not (mod i p))

@@ -32,7 +32,7 @@ def plcompile(self, *code):
     import compiler
     c = compiler.Compiler()
     compiler.context = self.vars
-    return c.run(code)
+    return c.compile(code)
 
 @lispfunc("has")
 def has(self, var, arg=None):
