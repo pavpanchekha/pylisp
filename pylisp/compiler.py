@@ -6,6 +6,13 @@ import sys
 
 debug = -1
 
+binops = {
+        "+": ast.Add, "-": ast.Sub, "*": ast.Mult, "/": ast.Div,
+        "mod": ast.Mod, "^": ast.Pow}
+
+unops = {
+        "+": ast.UAdd, "-": ast.USub, "not": ast.Not}
+
 class Compiler(object):
     def __init__(self, interactive=False):
         self.intp = lisp.Lisp()
@@ -134,6 +141,20 @@ class Compiler(object):
                 return ast.Str(tree[1])
         elif tree[0] == "for":
             return self._toexpr(["map", ["fn", [tree[1][0]]] + tree[2:], tree[1][1]])
+        elif isinstance(tree[0], str) and tree[0] in binops and len(tree) == 3:
+            return ast.BinOp(self._toexpr(tree[1]), binops[tree[0]](), self._toexpr(tree[2]))
+        elif isinstance(tree[0], str) and tree[0] in unops and len(tree) == 2:
+            return ast.UnaryOp(unops[tree[0]](), self._toexpr(tree[1]))
+        elif tree[0] == "::" and tree[2][0] == "'":
+            return ast.Attribute(self._toexpr(tree[1]), tree[2][1], ast.Load())
+        elif tree[0] == "[]":
+            if isinstance(tree[1], list) and tree[1][0] == "slice":
+                start = self._toexpr(tree[1][1]) if len(tree[1]) > 1 else None
+                stop = self._toexpr(tree[1][2]) if len(tree[1]) > 2 else None
+                step = self._toexpr(tree[1][3]) if len(tree[1]) > 3 else None
+                return ast.Subscript(self._toexpr(tree[1]), ast.Subscript(start, stop, step), ast.Load())
+            else:
+                return ast.Subscript(self._toexpr(tree[1]), ast.Index(self._toexpr(tree[2])), ast.Load())
         elif isinstance(tree, list) and tree:
             return ast.Call(self._toexpr(tree[0]),
                     map(self._toexpr, tree[1:]), [],

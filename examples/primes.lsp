@@ -37,6 +37,7 @@ for i in range(primes[-1], 1000, 2):
              (if append?
                (*primes*.append i)))))))
 
+
 (print)
 (print "Normalized times (Python is 1.0):")
 (print "Pythonic" "\t" (/ *pythonic-time* *python-time*))
