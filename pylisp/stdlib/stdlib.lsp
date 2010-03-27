@@ -38,4 +38,5 @@
 
 (use blocktypes)
 (use asserttypes)
+(use classtypes)
 

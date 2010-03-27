@@ -64,7 +64,7 @@ def set(self, name, value):
         self.vars[name[1]] = value
         if callable(value): value.__name__ = name[1]
     elif name[0] == "::":
-        setattr(self.eval(["::", name[:-1]]), self.eval(name[-1]), self.eval(value))
+        setattr(self.eval(["::", name[:-1]]), self.eval(name[-1]), value)
     elif name[0] == "[]":
         self.eval(name[1])[self.eval(name[2])] = value
     else:
