@@ -4,3 +4,4 @@
     - Make car, cdr macros?
  - Continuations?
  - Smarter assertions
+ - (property)

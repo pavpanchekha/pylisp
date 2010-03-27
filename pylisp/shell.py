@@ -39,7 +39,7 @@ def run(s, silent=True):
     
     try:
         v = l.run(s)
-    except lisp.BeReturnedI, e:
+    except lisp.specialforms.BeReturnedI, e:
         pass
     except Exception, e:
         traceback.print_exc()
@@ -64,9 +64,9 @@ def shell():
     while 1:
         try:
             s = input()
+            v = run(s, silent=False)
         except (SystemExit, EOFError, KeyboardInterrupt):
             return
-        v = run(s, silent=False)
 
 def main():
     import sys
@@ -74,11 +74,18 @@ def main():
     args = sys.argv
 
     if "-d" in args:
-        l.debug = True
         i = args.index("-d")
-        args = args[:i] + args[i+1:]
+        if len(args) > i + 1:
+            lisp.debug = int(args[i+1])
+            args = args[:i] + args[i+2:]
+        else:
+            lisp.debug = 1
+            args = args[:-1]
     else:
-        l.debug = False
+        pass
+
+    import compiler
+    compiler.debug = lisp.debug
     
     if len(args) > 1:
         for f in args[1:]:

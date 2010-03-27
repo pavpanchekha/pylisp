@@ -1,5 +1,3 @@
-(set!::macro 'def::macro (fn (name args . body)
-    `(set!::macro ',name (fn ,args ,@body))))
 
 (#import::macro 'fntypes)
 (#import::macro 'importtypes)
@@ -19,6 +17,9 @@
 
 (def::macro control (name . args)
     `'(,name ,@args))
+
+(def::macro compiled (. body)
+    `((compile ,@(map {x:`',x} body))))
 
 (def::macro and (x y)
     (let ((g1 (gensym)))

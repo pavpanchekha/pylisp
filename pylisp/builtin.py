@@ -3,13 +3,12 @@ import prettyprinter
 import sys
 
 builtins = {"nil": [], "#t": True, "#f": False, "#0": None}
-macros = {}
 
 def lispfunc(name):
     def decorator(f):
         def g(*args, **kwargs):
             return f(*args, **kwargs)
-        g.__name__ = name
+        g.func_name = g.__name__ = name
         g._catches = {}
         g._orig = f # For a nasty hack here and there
         builtins[name] = g
@@ -52,6 +51,20 @@ def cons(a, b):
 
 def dict_(*args): return dict(args)
 
+def atomp(self, var):
+    return not isinstance(var, list)
+
+@lispfunc("#import")
+def _import(*args):
+    args = list(args)
+    modname = ".".join(args)
+
+    if modname in sys.modules:
+        if sys.modules[modname].__dict__.get("#preprocess-only", False):
+            del sys.modules[modname]
+    __import__(modname)
+    return sys.modules[modname]
+
 @lispfunc("gensym")
 def gensym():
     import random
@@ -62,22 +75,11 @@ def print_(*args):
     for v in args:
         print "\n".join(prettyprinter.str_(v, breakline=True)),
     print
-    return args[-1]
+    return args[-1] if args else None
 
 @lispfunc("str")
 def str_(v):
     return prettyprinter.str_(v)[0]
-
-class signal(Exception):
-    def __init__(self, type, *args):
-        self.type = type if isinstance(type, list) else [type]
-        self.args = list(args) if isinstance(type, tuple) else args #ah, tuples are dumb
-
-    def __str__(self):
-        s1 = str_(self.type)
-        if self.args:
-            s1 += ": " + " ".join(map(str_, self.args))
-        return s1
 
 @lispfunc("silent")
 def silent(*args, **kwargs):
@@ -105,7 +107,7 @@ _t = {"+": foldable(operator.add, 0), "*": foldable(operator.mul, 1),
         "static-method": staticmethod, "class-method": classmethod,
         "callable?": callable, "raw_input": input, "#property": property,
         "sort": sorted, "help": help, "dict": dict_,
-        "in": operator.contains, "input": raw_input}
+        "in": operator.contains, "input": raw_input, "atom?": atomp}
 
 for name, fn in _t.items():
     lispfunc(name)(fn)
