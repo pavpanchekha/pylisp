@@ -47,3 +47,37 @@
 ; Tests for ListMonad
 (assert (= ((:: ((ListMonad (range 10)) {x: (* x 2)}) 'pierce)) '(0 2 4 6 8 10 12 14 16 18)))
 
+; StateMonad
+(class state-set ()
+  (def::method __init__ (val)
+    (set! self.val val)))
+
+(class StateMonad (Monad)
+  (def::method __init__ (val)
+    (set! self.v val))
+
+  (def::method bind (f)
+    (let ((ret (f self.v)))
+      (if (is ret state-set)
+        (StateMonad ret.val)
+        self)))
+
+  (def::method pierce (f)
+    self.v))
+
+((StateMonad 5) {v:(assert (= v 5))} {v:(state-set 6)} {v:(assert (= v 6))})
+
+; do syntax
+; (do MONAD var
+;   expr1
+;   expr2
+;   expr3)
+(use listtools)
+
+(def::macro do (m var . exprs)
+  `(,m ,@(for (expr exprs) `{,var:,expr})))
+
+(do (StateMonad 5) v
+  (assert (= v 5))
+  (state-set 6)
+  (assert (= v 6)))
