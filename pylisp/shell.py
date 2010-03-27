@@ -8,6 +8,9 @@ try:
 except ImportError:
     pass #Probably on Windows
 import os, sys
+import cProfile, pstats
+
+profile = False
 
 # Set up the interpreter
 l = lisp.Lisp()
@@ -38,7 +41,15 @@ def run(s, silent=True):
     import traceback
     
     try:
-        v = l.run(s)
+        if profile:
+            v = []
+            def f():
+                v.append(l.run(s))
+            cProfile.runctx("f()", globals(), locals(), "/tmp/profile.log")
+            pstats.Stats("/tmp/profile.log").strip_dirs().sort_stats("time").print_stats(20)
+            v = v.pop()
+        else:
+            v = l.run(s)
     except lisp.specialforms.BeReturnedI, e:
         pass
     except Exception, e:
@@ -69,6 +80,7 @@ def shell():
             return
 
 def main():
+    global profile
     import sys
     import os
     args = sys.argv
@@ -81,8 +93,11 @@ def main():
         else:
             lisp.debug = 1
             args = args[:-1]
-    else:
-        pass
+
+    if "-p" in args:
+        i = args.index("-p")
+        profile = True
+        args = args[:i] + args[i+1:]
 
     import compiler
     compiler.debug = lisp.debug
