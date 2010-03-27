@@ -107,7 +107,8 @@ _t = {"+": foldable(operator.add, 0), "*": foldable(operator.mul, 1),
         "static-method": staticmethod, "class-method": classmethod,
         "callable?": callable, "raw_input": input, "#property": property,
         "sort": sorted, "help": help, "dict": dict_,
-        "in": operator.contains, "input": raw_input, "atom?": atomp}
+        "in": operator.contains, "input": raw_input, "atom?": atomp,
+        "===": operator.is_, "is": isinstance}
 
 for name, fn in _t.items():
     lispfunc(name)(fn)
