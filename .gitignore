@@ -8,3 +8,4 @@ docs/Makefile
 docs/make.bat
 pip-log.txt
 build
+dist
