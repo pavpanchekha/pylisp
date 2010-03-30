@@ -1,13 +1,3 @@
-; First, a few helpers
-
-(def compose (f g)
-     {. args: (f (g . args))})
-
-(def concat (l)
-     (+ . l))
-
-(set! 'concatMap (compose concat map))
-
 ; Summary of Monad class syntax:
 ; (Monad a) -> a monad
 ; it's callable:
