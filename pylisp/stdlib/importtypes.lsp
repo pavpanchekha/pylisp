@@ -13,7 +13,7 @@
 (def::macro use (. args)
     `(block (import::macro ,@args) (import ,@args)))
 
-(def::macro use::all(l)
+(def::macro use::all(. l)
     `(block ,@(for (i l)
-         (+ (list 'use) (if (atom? i) i (list i))))))
+         (+ '(use) (if (atom? i) `(,i) i)))))
 

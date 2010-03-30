@@ -104,6 +104,7 @@ def main():
     
     if len(args) > 1:
         for f in args[1:]:
+            l.file = f
             run(open(f).read())
     else:
         shell()

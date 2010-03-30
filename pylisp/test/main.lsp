@@ -1,24 +1,28 @@
 (use tester)
 
+(block::macro
+  (use::all os sys)
+  (list.append sys.path (os.path.abspath (os.path.dirname #intp.file))))
+
 (test "Core language"
   (test "Math"
     (assert (= (mod (^ 2010 17) 17) (mod 2010 17)))
     (assert (= (^ 2 (^ 2 (^ 2 2))) 65536)))
-
+  
   (test "Function definitions"
     (assert (= ((fn (x) (* x x)) 10) 100)))
-
+  
   (test "let statement"
     (let ((a 1))
       (assert (= a 1)))
 
     (let ((f (fn (x) (- x 1))))
       (assert (= (f 7) 6))))
-
+  
   (test "set! statement"
     (set! 'a 10)
     (assert (= a 10)))
-
+  
   (test "def & Recursion"
     (def reverse (l) (reverse-aux l '()))
     (def reverse-aux (l acc)

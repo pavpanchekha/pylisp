@@ -5,16 +5,15 @@ preprocess_only = False
 Module = type(sys)
 
 class Finder(object):
-    def __init__(self, default, interpreter_cls):
-        self.default = default
+    def __init__(self, interpreter_cls):
         self.l_cls = interpreter_cls
 
     def find_module(self, name, paths):
         if paths is None:
-            paths = self.default
+            paths = sys.path
 
         for i in paths:
-            if name + ".lsp" in os.listdir(i) and (
+            if os.path.isdir(i) and name + ".lsp" in os.listdir(i) and (
                     os.path.isfile(os.path.join(i, name + ".lsp")) or
                     (
                         os.path.isdir(os.path.join(i, name + ".lsp")) and

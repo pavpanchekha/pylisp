@@ -10,17 +10,32 @@ sys.setrecursionlimit(100000) # It's lisp! It must recurse!
 
 debug = -1
 
+def debugging(name, level=2):
+    def decorator(f):
+        def func(self, tree):
+            if debug >= level:
+                print name+"::", tree
+            ret = f(self, tree)
+            if debug >= level:
+                print "->", ret
+            return ret
+        return func
+    return decorator
+
+macros = {}
+
 class Lisp(object):
     run_stdlib = True
 
     def __init__(self):
         bt = builtin.builtins.copy()
         bt.update(specialforms.specialforms)
-        bt.update({"eval": lambda *args: self.run(args)})
+        bt.update({"eval": lambda *args: self.run(args), "#intp": self})
 
         self.vars = inheritdict.idict(None, bt).push()
 
-        self.macros = {}
+        self.file = None
+        self.macros = macros
         self.call_stack = [self]
         self._lispprint = lambda: "#main"
         self._catches = {}
@@ -140,7 +155,8 @@ class Lisp(object):
             return [sum(map(self.quasieval, tree), [])]
 
 def setup_loader():
-    f = importer.Finder(info.import_path, Lisp)
+    sys.path.append(info.lib_folder)
+    f = importer.Finder(Lisp)
     sys.meta_path.append(f)
 setup_loader()
 
