@@ -45,7 +45,7 @@ def cons(a, b):
         raise TypeError("Cannot `cons` onto a string")
 
 def dict_(*args): return dict(args)
-def atomp(self, var): return not isinstance(var, list)
+def atomp(var): return not isinstance(var, list)
 
 @lispfunc("#import")
 def _import(*args):
@@ -97,7 +97,7 @@ _t = {"+": foldable(operator.add, 0), "*": foldable(operator.mul, 1),
         "!=": operator.ne, "<": operator.lt, ">": operator.gt, "<=": operator.le,
         ">=": operator.ge, "not": operator.not_, "conj": operator.invert,
         "::": foldable(getattr), "[]": foldable(operator.getitem),
-        "mod": operator.mod, "list": lambda *args: list(args),
+        "mod": operator.mod,
         "static-method": staticmethod, "class-method": classmethod,
         "callable?": callable, "raw_input": input, "#property": property,
         "sort": sorted, "help": help, "dict": dict_,
@@ -109,7 +109,7 @@ for name, fn in _t.items():
 
 _t2 = [len, slice, range, dir, abs, sys.exit, hash, all, map, zip, filter,
         any, bin, bool, chr, open, format, hex, id, int, max, min,
-        oct, ord, reduce, round, sum, car, cdr, cons, last]
+        oct, ord, reduce, round, sum, car, cdr, cons, last, list]
 
 for fn in _t2:
     lispfunc(fn.__name__)(fn)
