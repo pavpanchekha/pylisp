@@ -8,15 +8,10 @@ specialforms = {}
 
 def lispfunc(name, fexpr=False):
     def decorator(f):
-        def g(*args, **kwargs):
-            return f(*args, **kwargs)
-        g.func_name = g.__name__ = name
-        g._catches = {}
-        g._orig = f # For a nasty hack here and there
-        specialforms[name] = g
-        g._specialform = True
-        g._fexpr = fexpr
-        return g
+        specialforms[name] = f
+        f._specialform = True
+        f._fexpr = fexpr
+        return f
     return decorator
 
 @lispfunc("pyeval")

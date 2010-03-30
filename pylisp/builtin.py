@@ -6,13 +6,8 @@ builtins = {"nil": [], "#t": True, "#f": False, "#0": None}
 
 def lispfunc(name):
     def decorator(f):
-        def g(*args, **kwargs):
-            return f(*args, **kwargs)
-        g.func_name = g.__name__ = name
-        g._catches = {}
-        g._orig = f # For a nasty hack here and there
-        builtins[name] = g
-        return g
+        builtins[name] = f
+        return f
     return decorator
 
 def foldable(f, default = None):
@@ -50,9 +45,7 @@ def cons(a, b):
         raise TypeError("Cannot `cons` onto a string")
 
 def dict_(*args): return dict(args)
-
-def atomp(self, var):
-    return not isinstance(var, list)
+def atomp(self, var): return not isinstance(var, list)
 
 @lispfunc("#import")
 def _import(*args):
@@ -62,6 +55,7 @@ def _import(*args):
     if modname in sys.modules:
         if sys.modules[modname].__dict__.get("#preprocess-only", False):
             del sys.modules[modname]
+
     __import__(modname)
     return sys.modules[modname]
 
