@@ -14,12 +14,16 @@ unops = {
         "+": ast.UAdd, "-": ast.USub, "not": ast.Not}
 
 class Compiler(object):
-    def __init__(self, interactive=False):
-        self.intp = lisp.Lisp()
-        del self.intp.macros["while"]
-        del self.intp.macros["for"]
-        del self.intp.macros["def"]
-        self.context = self.intp.vars
+    def __init__(self, intp=None, interactive=False):
+        if intp is None:
+            self.intp = lisp.Lisp()
+            del self.intp.macros["while"]
+            del self.intp.macros["for"]
+            del self.intp.macros["def"]
+            self.context = self.intp.vars
+        else:
+            self.context = intp.vars
+            self.intp = intp
         self.interactive = interactive
 
     def run(self, s):
