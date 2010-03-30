@@ -12,8 +12,8 @@
     (let ((a 1))
       (assert (= a 1)))
 
-      (let ((f (fn (x) (if (<= x 0) 0 (+ (f (- x 1)) 1)))))
-      (assert (= (f 7) 7))))
+    (let ((f (fn (x) (- x 1))))
+      (assert (= (f 7) 6))))
 
   (test "set! statement"
     (set! 'a 10)

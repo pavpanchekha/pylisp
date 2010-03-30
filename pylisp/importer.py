@@ -52,13 +52,12 @@ class Loader(object):
 
     def load_package(self, name, mod):
         mod.__path__ = self.path # TODO: adding paths?
-
-        self.l.vars.dict = mod.__dict__
         self.eval(os.path.join(self.path, name, "__init__.lsp"))
+        mod.__dict__.update(self.l.vars.dict)
 
     def load_simple(self, name, mod):
-        self.l.vars.dict = mod.__dict__
         self.eval(os.path.join(self.path, name + ".lsp"))
+        mod.__dict__.update(self.l.vars.dict)
         mod.__file__ = os.path.join(self.path, name + ".lsp")
 
     def eval(self, path):

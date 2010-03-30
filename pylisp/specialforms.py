@@ -25,8 +25,7 @@ def pyexec(self, code):
 @lispfunc("compile")
 def plcompile(self, *code):
     import compiler
-    c = compiler.Compiler()
-    compiler.context = self.vars
+    c = compiler.Compiler(self)
     return c.compile(code)
 
 @lispfunc("has")
@@ -38,10 +37,17 @@ def has(self, var, arg=None):
 
 @lispfunc("#include")
 def _include(self, *args):
+    import sys
     args = list(args)
     modname = ".".join(args)
+    
+    if modname in sys.modules:
+        if sys.modules[modname].__dict__.get("#preprocess-only", False):
+            del sys.modules[modname]
+    
     __import__(modname)
-    self.vars.dict.update(sys.modules[modname].__dict__)
+    d = sys.modules[modname].__dict__
+    self.vars.dict.update(d)
 
 @lispfunc("if", True)
 def _if(self, test, true, false=None):
@@ -95,7 +101,7 @@ def signal(self, type, *args):
 
     for i, f in enumerate(reversed(self.call_stack)):
         ttype = tuple(type[:])
-        while ttype and ttype not in f._catches:
+        while hasattr(f, "_catches") and ttype and ttype not in f._catches:
             ttype = tuple(ttype[:-1])
         if ttype:
             break
@@ -147,7 +153,8 @@ def fn(self, sig, *body):
         if many_name is not None:
             vars[many_name] = list(args)[len(sig):]
 
-        self.vars = inheritdict.idict(self.vars, llambda._vars).push(vars)
+        old_vars = self.vars
+        self.vars = llambda._vars.push(vars)
         self.call_stack.append(llambda)
         try:
             return self.run(body)
@@ -155,8 +162,7 @@ def fn(self, sig, *body):
             return e.args[0]
         finally:
             self.call_stack.pop()
-            self.vars = self.vars.pop().pop()
-
+            self.vars = old_vars
     llambda._vars = self.vars
     llambda._catches = {}
     llambda.__name__ = ""

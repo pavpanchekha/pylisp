@@ -1,7 +1,9 @@
+(#import::macro 'importtypes) ;This gives us (include)
+(include fntypes) ; Ok, now we've bootstrapped our way to a useable lisp!
 
-(#import::macro 'fntypes)
-(#import::macro 'importtypes)
-; Ok, now we've bootstrapped our way to a useable lisp!
+(include blocktypes)
+(include asserttypes)
+(include classtypes)
 
 (def::macro ++ (var)
     `(set! ',var (+ ,var 1)))
@@ -35,8 +37,4 @@
 (def and (x y) (if x x y))
 (def xor (x y) (!= (bool x) (bool y)))
 ; Note the use of macros with function backups
-
-(use blocktypes)
-(use asserttypes)
-(use classtypes)
 

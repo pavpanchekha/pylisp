@@ -4,8 +4,8 @@
 
 (def::macro include (. args)
     `(block
-       (#include ,@(map {x: `',x} args))
-       (#import::macro ,@(map {x: `',x} args))))
+       (#import::macro ,@(map {x: `',x} args))
+       (#include ,@(map {x: `',x} args))))
 
 (def::macro import::macro (. args)
     `(#import::macro ,@(map {x: `',x} args)))
