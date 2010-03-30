@@ -24,19 +24,19 @@ def car(l):
     if not isinstance(l, str):
         return l[0]
     else:
-        raise TypeError("Cannot take `car` of a list")
+        raise TypeError("Cannot take `car` of a str")
 
 def cdr(l):
     if not isinstance(l, str):
         return l[1:] 
     else:
-        raise TypeError("Cannot take `cons` of a list")
+        raise TypeError("Cannot take `cdr` of a str")
 
 def last(l):
     if not isinstance(l, str):
         return l[-1] 
     else:
-        raise TypeError("Cannot take `last` of a list")
+        raise TypeError("Cannot take `last` of a str")
 
 def cons(a, b):
     if not isinstance(b, str):
