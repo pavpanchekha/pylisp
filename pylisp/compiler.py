@@ -96,7 +96,8 @@ class Compiler(object):
                 stargs = None
             body = map(self._tostmt, tree[3:])
             return ast.FunctionDef(name, ast.arguments(map(lambda x: ast.Name(x, ast.Param()), args), stargs, None, []), body, [])
-
+        elif tree[0] == "assert":
+            return ast.Assert(self._toexpr(tree[1]), self._toexpr(tree[2]) if len(tree) > 2 else None)
         else:
             return ast.Expr(self._toexpr(tree))
 
@@ -182,7 +183,7 @@ if __name__ == "__main__":
     import readline
     if "-d" in sys.argv:
         debug = 1
-    c = Compiler(True) # interactive
+    c = Compiler(interactive=True)
     while True:
         try:
             s = raw_input("compile> ")
