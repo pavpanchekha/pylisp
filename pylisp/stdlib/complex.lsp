@@ -39,7 +39,7 @@
             (math.sqrt (+ (^ self.real 2) (^ self.imag 2))))
 
        (def::method _reciprocal ()
-            (let ((normsq (^ (abs self) 2)))
+            (let (normsq (^ (abs self) 2))
               (Complex (/ self.real normsq)
                        (/ (- self.imag) normsq))))
 

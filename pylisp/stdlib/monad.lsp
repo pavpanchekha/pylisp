@@ -57,7 +57,7 @@
     (set! self.v val))
 
   (def::method bind (f)
-    (let ((ret (f self.v)))
+    (let (ret (f self.v))
       (if (is ret state-set)
         (StateMonad ret.val)
         self)))

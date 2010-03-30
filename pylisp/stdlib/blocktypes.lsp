@@ -1,6 +1,8 @@
 
 (def::macro let (vars . body)
-    `((fn ,(map car vars) ,@body) ,@(map cadr vars)))
+  (if (atom? (car vars))
+    `((fn (,(car vars)) ,@body) ,(cadr vars))
+    `((fn ,(map car vars) ,@body) ,@(map cadr vars))))
 
 (def while* (test-fn body-fn)
   (if (test-fn)

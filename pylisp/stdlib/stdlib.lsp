@@ -24,13 +24,13 @@
     `((compile ,@(map {x:`',x} body))))
 
 (def::macro and (x y)
-    (let ((g1 (gensym)))
-      `(let ((,g1 ,x))
+    (let (g1 (gensym))
+      `(let (,g1 ,x)
          (if ,g1 ,y ,g1))))
 
 (def::macro or (x y)
-    (let ((g1 (gensym)))
-      `(let ((,g1 ,x))
+    (let (g1 (gensym))
+      `(let (,g1 ,x)
          (if ,g1 ,g1 ,y))))
 
 (def or (x y) (if x y x))

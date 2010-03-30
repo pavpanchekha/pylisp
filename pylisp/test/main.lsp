@@ -13,10 +13,10 @@
     (assert (= ((fn (x) (* x x)) 10) 100)))
   
   (test "let statement"
-    (let ((a 1))
+    (let (a 1)
       (assert (= a 1)))
 
-    (let ((f (fn (x) (- x 1))))
+    (let (f (fn (x) (- x 1)))
       (assert (= (f 7) 6))))
   
   (test "set! statement"
@@ -94,4 +94,4 @@
     (assert (not flag))))
 
 ; Cool! We won!
-(signal '(warning success))
+(signal '(warning success) "Test suite executed successfully!")
