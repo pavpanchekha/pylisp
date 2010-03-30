@@ -13,6 +13,13 @@ binops = {
 unops = {
         "+": ast.UAdd, "-": ast.USub, "not": ast.Not}
 
+def print_code(code):
+    print code, "::"
+    dis.dis(code)
+    for const in code.co_consts:
+        if type(const) == type(code):
+            print_code(const)
+
 class Compiler(object):
     def __init__(self, intp=None, interactive=False):
         if intp is None:
@@ -31,7 +38,8 @@ class Compiler(object):
 
     def compile(self, s):
         c = self._compile(s)
-        if debug > -1: dis.dis(c)
+        if debug > -1:
+            print_code(c)
         return Environment(c, self.context)
 
     def _compile(self, s):
@@ -69,7 +77,9 @@ class Compiler(object):
             return ast.Suite(map(self._tostmt, tree[1:]))
         elif tree[0] == "set!":
             value = self._toexpr(tree[2])
-            if tree[1][0] == "'":
+            if not isinstance(tree[1], list):
+                return ast.Assign([ast.Name(tree[1], ast.Store())], value)
+            elif tree[1][0] == "'":
                 return ast.Assign([ast.Name(tree[1][1], ast.Store())], value)
             else:
                 raise NotImplementedError("Can't set! `%s`" % tree[1][0])
@@ -84,8 +94,6 @@ class Compiler(object):
             iter = self._toexpr(tree[1][1])
             body = map(self._tostmt, tree[2:])
             return ast.For(target, iter, body, [])
-        #elif tree[0] == "print":
-            #return ast.Print(None, map(self._toexpr, tree[1:]), True)
         elif tree[0] == "def":
             name = tree[1]
             args = tree[2]
