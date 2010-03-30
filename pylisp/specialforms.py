@@ -60,8 +60,9 @@ def _if(self, test, true, false=None):
 def set(self, name, value):
     value = self.eval(value)
     if not isinstance(name, list):
-        raise SyntaxError("What the hell are you trying to set?")
-    elif name[0] == "'" and isinstance(name[1], str):
+        name = ["'", name]
+
+    if name[0] == "'" and isinstance(name[1], str):
         self.vars[name[1]] = value
         if callable(value): value.__name__ = name[1]
     elif name[0] == "::":
