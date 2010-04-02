@@ -19,6 +19,7 @@ def debugging(name, level=2):
             if debug >= level:
                 print "->", ret
             return ret
+        func._orig = f
         return func
     return decorator
 
@@ -53,6 +54,12 @@ class Lisp(object):
         self.vars = self.vars.push()
 
     def run(self, s, mult=True):
+        global debug
+        if debug == -1:
+            Lisp.preprocess_ = self.preprocess_._orig
+            Lisp.eval = self.eval._orig
+            Lisp.quasieval = self.quasieval._orig
+            debug = -2
         if isinstance(s, str): s = parser.parse(s)
         if not mult: s = [s]
         sexps = map(self.preprocess, s)
@@ -106,12 +113,15 @@ class Lisp(object):
 
     @debugging("Evaluating", 1)
     def eval(self, tree):
-        if isinstance(tree, str):
-            try:
-                return self.vars[tree]
-            except KeyError:
+        try:
+            return self.vars[tree]
+        except TypeError:
+            pass
+        except KeyError:
+            if isinstance(tree, str):
                 raise NameError("Lisp: Name `%s` does not exist" % tree)
-        elif not isinstance(tree, list):
+
+        if not isinstance(tree, list):
             return tree
         elif len(tree) == 0:
             return None
