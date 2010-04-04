@@ -137,25 +137,51 @@ def signal(self, type, *args):
 def _return(self, arg=[]):
     raise ReturnI(arg)
 
+def parsesig(self, sig, args, kwargs):
+    local = {}
+
+    arg_ptr = 0
+    expect_star = False
+    for arg in sig:
+        if isinstance(arg, str):
+            if arg == ".":
+                expect_star = True
+                continue
+            elif expect_star:
+                local[arg] = args[arg_ptr:]
+                arg_pts = len(args)
+            elif arg in kwargs:
+                local[arg] = kwargs[arg]
+            else:
+                local[arg] = args[arg_ptr]
+                arg_ptr += 1
+        elif arg[0] == "#:":
+            arg = arg[1]
+            if arg[0] == ".":
+                local[arg[1]] = kwargs
+            else:
+                if arg[0] in kwargs:
+                    local[arg[0]] = kwargs[arg[0]]
+                elif arg_ptr >= len(args):
+                    local[arg[0]] = self.eval(arg[1])
+                else:
+                    local[arg[0]] = args[arg_ptr]
+                    arg_ptr += 1
+    return local
+
 @lispfunc("fn", True)
 def fn(self, sig, *body):
     if isinstance(body, tuple): body = list(body)
     if isinstance(sig, str): sig = [".", sig]
     
-    if "." in sig:
-        many_name = sig[sig.index(".") + 1]
-        sig[sig.index("."):] = []
-    else:
-        many_name = None
-    
-    def llambda(*args):
-        vars = dict(zip(sig, args))
-
-        if many_name is not None:
-            vars[many_name] = list(args)[len(sig):]
+    def llambda(*args, **kwargs):
+        try:
+            local = parsesig(self, sig, list(args), kwargs)
+        except IndexError:
+            raise TypeError("Incorrect number of arguments to `%s`" % llambda.__name__)
 
         old_vars = self.vars
-        self.vars = llambda._vars.push(vars)
+        self.vars = llambda._vars.push(local)
         self.call_stack.append(llambda)
         try:
             return self.run(body)
@@ -167,6 +193,7 @@ def fn(self, sig, *body):
     llambda._vars = self.vars
     llambda._catches = {}
     llambda.__name__ = ""
+
     return llambda
 
 @lispfunc("#class", True)

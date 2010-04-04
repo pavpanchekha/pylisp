@@ -20,6 +20,11 @@ is invalid, it by convention returns "" and eats nothing
 (that is, it returns `("", s)` if passed an invalid `s`.
 """
 
+prefixes = []
+
+def prefix(name):
+    prefixes.append(name)
+
 def eat_name(s):
     """
     Eat a name, following the eat protocol.
@@ -203,6 +208,12 @@ def eat_function(s):
 
     return ["fn", vars] + body, s[1:]
 
+prefix("'")
+prefix("`")
+prefix(",")
+prefix(",@")
+prefix("#:")
+
 def eat_value(s):
     """
     Eat a value in general. Will choose from other "eat_x"
@@ -219,14 +230,13 @@ def eat_value(s):
         return eat_sexp(s)
     elif s[0] in "0123456789.":
         return eat_number(s)
-    elif s[0] in "'`,":
-        c = s[0]
-        s = s[1:]
-        if c == "," and s[0] == "@":
-            c = ",@"
-            s = s[1:]
+
+    poss_pref = [pref for pref in prefixes if s.startswith(pref)]
+    if poss_pref:
+        pref = sorted(poss_pref, key=len)[-1]
+        s = s[len(pref):]
         sexp, s = eat_value(s)
-        return [c, sexp], s
+        return [pref, sexp], s
     elif s[0] == '"':
         return eat_str(s)
     elif s.startswith("{{{"):

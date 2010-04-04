@@ -29,7 +29,17 @@
       (if (not l)
         acc
         (reverse-aux (cdr l) (cons (car l) acc))))
-    (assert (= (reverse '(1 2 3)) '(3 2 1)))))
+    (assert (= (reverse '(1 2 3)) '(3 2 1))))
+  
+  (test "Keywords and varargs"
+    (def retargs (. args #:(. kwargs))
+        `(,args ,kwargs))
+    (assert (= (retargs 1 2 3) `((1 2 3) ,(dict))))
+    (assert (= (retargs 1 2 #:(b 4)) `((1 2) ,(dict '(b 4)))))
+    (def defargs (a #:(b 2) #:(c 3)) (+ a b c))
+    (assert (= (defargs 1 2 3) 6))
+    (assert (= (defargs 1 2) 6))
+    (assert (= (defargs #:(a 5) 3) 11))))
 
 (test "Exceptions"
   (test "(control ignore)"

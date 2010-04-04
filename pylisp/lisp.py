@@ -132,20 +132,31 @@ class Lisp(object):
             if hasattr(func, "_fexpr") and func._fexpr == True:
                 assert "." not in tree, "Cannot apply `%s` to arguments; `%s` is a special form" % (func, func)
                 return func(self, *tree[1:])
-            elif hasattr(func, "_specialform"):
-                if "." in tree:
-                    i = tree.index(".")
-                    args = map(self.eval, tree[1:i]) + self.eval(tree[i+1])
+            
+            args = []
+            kwargs = {}
+            expect_star = False
+            for arg in tree[1:]:
+                if isinstance(arg, list) and len(arg) > 0 and arg[0] == "#:":
+                    if not isinstance(arg[1][0], str):
+                        raise SyntaxError("First element of keyword must be identifier")
+                    else:
+                        if arg == ".":
+                            kwargs.update(self.eval(arg[1][1]))
+                        else:
+                            kwargs[arg[1][0]] = self.eval(arg[1][1])
+                elif arg == ".":
+                    expect_star = True
                 else:
-                    args = map(self.eval, tree[1:])
-                return func(self, *args)
+                    c = self.eval(arg)
+                    if expect_star: args += c
+                    else: args.append(c)
+                    expect_star = False
+
+            if hasattr(func, "_specialform"):
+                return func(self, *args, **kwargs)
             else:
-                if "." in tree:
-                    i = tree.index(".")
-                    args = map(self.eval, tree[1:i]) + self.eval(tree[i+1])
-                else:
-                    args = map(self.eval, tree[1:])
-                return func(*args)
+                return func(*args, **kwargs)
         except specialforms.BeReturnedI, e:
             if len(self.call_stack) == e.args[0]:
                 return e.args[1]
