@@ -1,4 +1,3 @@
- - Optional arguments & keyword arguments?
  - (return) fails inside loops
  - Make set! recognize [], car, cdr, etc
     - Make car, cdr macros?
