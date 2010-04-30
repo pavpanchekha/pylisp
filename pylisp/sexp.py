@@ -20,6 +20,20 @@ is invalid, it by convention returns "" and eats nothing
 (that is, it returns `("", s)` if passed an invalid `s`.
 """
 
+class sexp(list):
+    __slots__ = ["line", "col", "file"]
+    def __init__(self, *args, **kwargs):
+        list.__init__(self)
+        self.extend(args)
+
+        line = kwargs.get("line", 0)
+        col  = kwargs.get("col",  0)
+        file = kwargs.get("file", "<anon>")
+
+        self.line = line
+        self.col  = col
+        self.file = file
+
 prefixes = []
 
 def prefix(name):
@@ -252,13 +266,11 @@ def eat_value(s):
         return sexp, s
 
 def parse(s):
-    tree = []
     while s != "":
         sexp, s = eat_value(s)
         if sexp is not "":
             s = s.strip()
-            tree.append(sexp)
-    return tree
+            yield sexp
 
 if __name__ == "__main__":
     import doctest

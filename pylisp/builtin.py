@@ -73,8 +73,8 @@ def print_(*args):
 
 @lispfunc("str")
 class str_(str):
-    def __new__(args):
-        return prettyprinter.str_(v)[0]
+    def __new__(cls, *args):
+        return prettyprinter.str_(*args)[0]
 
 @lispfunc("silent")
 def silent(*args, **kwargs):
@@ -91,7 +91,13 @@ def subtract(*args):
 def read(s=""):
     import sexp
     v = raw_input(s)
-    return sexp.parse(v)
+    return list(sexp.parse(v))
+
+@lispfunc("set!::reader")
+def set_reader(name):
+    import sexp
+    sexp.prefixes.append(name)
+    return name
 
 _t = {"+": foldable(operator.add, 0), "*": foldable(operator.mul, 1),
         "/": foldable(operator.truediv), "^": operator.pow, "=": operator.eq,

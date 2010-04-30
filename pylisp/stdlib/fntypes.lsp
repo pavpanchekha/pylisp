@@ -13,3 +13,8 @@
 
 (def::macro def::abstract (name)
   `(def ,name () (signal '(error not-implemented) ,(+ name " intended for subclassing"))))
+
+(def::macro def::reader (name args . body)
+  `(block
+     (set! (:: (def ,name (#intp ,@args) ,@body) '_fexpr) #t)
+     (set!::reader ',name)))
