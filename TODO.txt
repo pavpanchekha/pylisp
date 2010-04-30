@@ -4,3 +4,4 @@
  - Continuations?
  - Smarter assertions
  - (property)
+ - (is "asdf" str) -> #f

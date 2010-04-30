@@ -72,8 +72,9 @@ def print_(*args):
     return args[-1] if args else None
 
 @lispfunc("str")
-def str_(v):
-    return prettyprinter.str_(v)[0]
+class str_(str):
+    def __new__(args):
+        return prettyprinter.str_(v)[0]
 
 @lispfunc("silent")
 def silent(*args, **kwargs):
