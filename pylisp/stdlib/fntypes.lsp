@@ -15,6 +15,7 @@
   `(def ,name () (signal '(error not-implemented) ,(+ name " intended for subclassing"))))
 
 (def::macro def::reader (name args . body)
-  `(block
-     (set! (:: (def ,name (#intp ,@args) ,@body) '_fexpr) #t)
-     (set!::reader ',name)))
+  (let (g1 (gensym))
+    `(let (,g1 (fn ,(+ '(#intp) args) ,@body))
+       (set! (:: ,g1 '_fexpr) #t)
+       (set!::reader ',name ,g1))))

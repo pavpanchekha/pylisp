@@ -8,6 +8,19 @@
   (test "Math"
     (assert (= (mod (^ 2010 17) 17) (mod 2010 17)))
     (assert (= (^ 2 (^ 2 (^ 2 2))) 65536)))
+
+  (test "Conditionals"
+    (assert (if (= (^ 17 2) 289) #t #f))
+    (assert (let (a 3)
+              (cond
+                ((= a 1)
+                 #f)
+                ((= a 2)
+                 #f)
+                ((= a 3)
+                 #t)
+                (#t
+                 #f)))))
   
   (test "Function definitions"
     (assert (= ((fn (x) (* x x)) 10) 100)))
