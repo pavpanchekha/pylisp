@@ -64,7 +64,7 @@ def input():
 
     while True:
         try:
-            sexps = lisp.parser.parse(s)
+            sexps = list(lisp.parser.parse(s))
         except IndexError:
             s += raw_input("... > ") + "\n"
         else:

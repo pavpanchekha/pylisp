@@ -94,9 +94,9 @@ def read(s=""):
     return list(sexp.parse(v))
 
 @lispfunc("set!::reader")
-def set_reader(name):
+def set_reader(name, fn):
     import sexp
-    sexp.prefixes.append(name)
+    sexp.prefixes.append((name, fn))
     return name
 
 _t = {"+": foldable(operator.add, 0), "*": foldable(operator.mul, 1),
