@@ -57,7 +57,7 @@ class idict(object):
             except KeyError:
                 del self.cache[item]
                 self.dict[item] = value
-        if self.parent.stop or item not in self.parent:
+        if isinstance(self.parent, dict) or self.parent.stop or item not in self.parent:
             self.dict[item] = value
         else:
             self.parent[item] = value
