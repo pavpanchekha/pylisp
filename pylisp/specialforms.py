@@ -1,9 +1,7 @@
 import inheritdict
 from builtin import str_
+from common import *
 
-class ReturnI(Exception): pass
-class BeReturnedI(Exception): pass
-            
 specialforms = {}
 
 def lispfunc(name, fexpr=False):

@@ -117,54 +117,60 @@ class Lisp(object):
     @debugging("Evaluating", 1)
     def eval(self, tree):
         try:
-            return self.vars[tree]
-        except TypeError:
-            pass
-        except KeyError:
-            if isinstance(tree, str):
-                raise NameError("Lisp: Name `%s` does not exist" % tree)
+            try:
+                return self.vars[tree]
+            except TypeError:
+                pass
+            except KeyError:
+                if isinstance(tree, str):
+                    raise NameError("Name `%s` does not exist" % tree)
 
-        if not isinstance(tree, list):
-            return tree
-        elif len(tree) == 0:
-            return None
-        
-        func = self.eval(tree[0])
-
-        try:
-            if hasattr(func, "_fexpr") and func._fexpr == True:
-                assert "." not in tree, "Cannot apply `%s` to arguments; `%s` is a special form" % (func, func)
-                return func(self, *tree[1:])
+            if not isinstance(tree, list):
+                return tree
+            elif len(tree) == 0:
+                return None
             
-            args = []
-            kwargs = {}
-            expect_star = False
-            for arg in tree[1:]:
-                if isinstance(arg, list) and len(arg) > 0 and arg[0] == "#:":
-                    if not isinstance(arg[1][0], str):
-                        raise SyntaxError("First element of keyword must be identifier")
-                    else:
-                        if arg == ".":
-                            kwargs.update(self.eval(arg[1][1]))
-                        else:
-                            kwargs[arg[1][0]] = self.eval(arg[1][1])
-                elif arg == ".":
-                    expect_star = True
-                else:
-                    c = self.eval(arg)
-                    if expect_star: args += c
-                    else: args.append(c)
-                    expect_star = False
+            func = self.eval(tree[0])
 
-            if hasattr(func, "_specialform"):
-                return func(self, *args, **kwargs)
-            else:
-                return func(*args, **kwargs)
-        except specialforms.BeReturnedI, e:
-            if len(self.call_stack) == e.args[0]:
-                return e.args[1]
-            else:
-                raise
+            try:
+                if hasattr(func, "_fexpr") and func._fexpr == True:
+                    assert "." not in tree, "Cannot apply `%s` to arguments; `%s` is a special form" % (func, func)
+                    return func(self, *tree[1:])
+                
+                args = []
+                kwargs = {}
+                expect_star = False
+                for arg in tree[1:]:
+                    if isinstance(arg, list) and len(arg) > 0 and arg[0] == "#:":
+                        if not isinstance(arg[1][0], str):
+                            raise SyntaxError("First element of keyword must be identifier")
+                        else:
+                            if arg == ".":
+                                kwargs.update(self.eval(arg[1][1]))
+                            else:
+                                kwargs[arg[1][0]] = self.eval(arg[1][1])
+                    elif arg == ".":
+                        expect_star = True
+                    else:
+                        c = self.eval(arg)
+                        if expect_star: args += c
+                        else: args.append(c)
+                        expect_star = False
+
+                if hasattr(func, "_specialform"):
+                    return func(self, *args, **kwargs)
+                else:
+                    return func(*args, **kwargs)
+            except specialforms.BeReturnedI, e:
+                if len(self.call_stack) == e.args[0]:
+                    return e.args[1]
+                else:
+                    raise
+        except specialforms.Instruction:
+            raise
+        except Exception as e:
+            name = list(specialforms.exc2sig_name(e.__class__))
+            self.vars["signal"](self, name, *e.args)
 
     @debugging("Quasi-eval", 2)
     def quasieval(self, tree):
