@@ -30,3 +30,9 @@
       `(if ,(car p)
          ,(cadr p)
          (cond ,@(cdr pairs))))))
+
+(def::macro case (expr . pairs)
+  (let (g1 (gensym))
+    `(let (,g1 ,expr)
+       (case
+         ,@(map {p: `((= ,g1 ,(car p)) ,@(cdr p))} pairs)))))

@@ -27,6 +27,7 @@ macros = {}
 
 class Lisp(object):
     run_stdlib = True
+    stdlib = None
 
     def __init__(self):
         bt = builtin.builtins.copy()
@@ -41,11 +42,14 @@ class Lisp(object):
         self._lispprint = lambda: "#main"
         self._catches = {}
 
-        self.run(info.lib("basics"))
-        if Lisp.run_stdlib:
-            Lisp.run_stdlib = False
-            self.run(info.lib("stdlib")) # Assuming no error
-            Lisp.run_stdlib = True
+        if not Lisp.stdlib:
+            self.run(info.lib("basics"))
+            if Lisp.run_stdlib:
+                Lisp.run_stdlib = False
+                self.run(info.lib("stdlib")) # Assuming no error
+                Lisp.run_stdlib = True
+        else:
+            self.vars = Lisp.stdlib
 
         if debug > 0:
             print "StdLib:: Standard library loaded"
