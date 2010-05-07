@@ -8,8 +8,8 @@
 
 (def right-rotate (node)
   (Node node.right.p node.right.key node.right.val
-        (Node node.p node.key node.val node.left node.right.left))
-        node.right.right)
+        (Node node.p node.key node.val node.left node.right.left)
+        node.right.right))
 
 (def get (key root)
   (cond
@@ -85,6 +85,11 @@
     `(,root.key ,(treap->list root.left) ,(treap->list root.right))
     root))
 
+(def depth (root)
+  (if (not root)
+    0
+    (max (+ 1 (depth root.left)) (+ 1 (depth root.right)))))
+
 (use tester)
 (test "Sanity check"
   (let (treap #0)
@@ -98,3 +103,9 @@
     (assert (= (get 2 treap) 'd))
     (set! treap (del 5 treap))
     (assert (not (in 5 treap)))))
+(test "Fairly Balanced"
+  (let (treap #0)
+    (signal '(warning test slow-test) "Balancing test")
+    (for (i (range 1000))
+      (set! treap (set i #0 treap)))
+    (assert (< (depth treap) 30))))
