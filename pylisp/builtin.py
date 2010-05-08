@@ -75,6 +75,9 @@ def print_(*args):
 class str_(str):
     def __new__(cls, *args):
         return prettyprinter.str_(*args)[0]
+    @staticmethod
+    def __instancecheck__(inst): #Getting ready for py3k
+        return isinstance(inst, str)
 
 @lispfunc("silent")
 def silent(*args, **kwargs):

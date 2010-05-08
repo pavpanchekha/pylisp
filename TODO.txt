@@ -5,4 +5,4 @@
  - Smarter assertions
  - (property)
  - (is "asdf" str) -> #f
- - Investigate partial (unfinished) expressions in repl
+   This will work once I port to py3k
