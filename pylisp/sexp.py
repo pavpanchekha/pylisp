@@ -208,7 +208,7 @@ def eat_function(s):
     if s[0] != "{": return "", s
 
     i = s.find(":")
-    if not i: raise SyntaxError("No end to function definition")
+    if i == -1: raise SyntaxError("No arguments in function definition")
 
     vars = map(lambda x: eat_value(x)[0], s[1:i].split())
     body = []
