@@ -219,6 +219,8 @@ def eat_function(s):
         if sexp:
             s = s.strip()
             body.append(sexp)
+        else:
+            raise SyntaxError("Unbalanced {:} notation")
 
     return ["fn", vars] + body, s[1:]
 

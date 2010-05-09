@@ -64,7 +64,12 @@ class Lisp(object):
             Lisp.eval = self.eval._orig
             Lisp.quasieval = self.quasieval._orig
             debug = -2
-        if isinstance(s, str): s = parser.parse(s)
+        
+        try:
+            if isinstance(s, str): s = parser.parse(s)
+        except SyntaxError as e:
+            self.vars["signal"](self, ["error", "standard", "syntax"], *e.args)
+
         if not mult: s = [s]
         return map(lambda x: self.eval(self.preprocess(x)), s)[-1] if s else None
 
