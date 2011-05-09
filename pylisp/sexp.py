@@ -20,6 +20,25 @@ is invalid, it by convention returns "" and eats nothing
 (that is, it returns `("", s)` if passed an invalid `s`.
 """
 
+class sexp(list):
+    __slots__ = ["line", "col", "file"]
+    def __init__(self, *args, **kwargs):
+        list.__init__(self)
+        self.extend(args)
+
+        line = kwargs.get("line", 0)
+        col  = kwargs.get("col",  0)
+        file = kwargs.get("file", "<anon>")
+
+        self.line = line
+        self.col  = col
+        self.file = file
+
+prefixes = []
+
+def prefix(name):
+    prefixes.append(name)
+
 def eat_name(s):
     """
     Eat a name, following the eat protocol.
@@ -189,7 +208,7 @@ def eat_function(s):
     if s[0] != "{": return "", s
 
     i = s.find(":")
-    if not i: raise SyntaxError("No end to function definition")
+    if i == -1: raise SyntaxError("No arguments in function definition")
 
     vars = map(lambda x: eat_value(x)[0], s[1:i].split())
     body = []
@@ -200,8 +219,16 @@ def eat_function(s):
         if sexp:
             s = s.strip()
             body.append(sexp)
+        else:
+            raise SyntaxError("Unbalanced {:} notation")
 
     return ["fn", vars] + body, s[1:]
+
+prefix("'")
+prefix("`")
+prefix(",")
+prefix(",@")
+prefix("#:")
 
 def eat_value(s):
     """
@@ -219,14 +246,13 @@ def eat_value(s):
         return eat_sexp(s)
     elif s[0] in "0123456789.":
         return eat_number(s)
-    elif s[0] in "'`,":
-        c = s[0]
-        s = s[1:]
-        if c == "," and s[0] == "@":
-            c = ",@"
-            s = s[1:]
+
+    poss_pref = [pref for pref in prefixes if s.startswith(pref)]
+    if poss_pref:
+        pref = sorted(poss_pref, key=len)[-1]
+        s = s[len(pref):]
         sexp, s = eat_value(s)
-        return [c, sexp], s
+        return [pref, sexp], s
     elif s[0] == '"':
         return eat_str(s)
     elif s.startswith("{{{"):
@@ -242,13 +268,11 @@ def eat_value(s):
         return sexp, s
 
 def parse(s):
-    tree = []
     while s != "":
         sexp, s = eat_value(s)
         if sexp is not "":
             s = s.strip()
-            tree.append(sexp)
-    return tree
+            yield sexp
 
 if __name__ == "__main__":
     import doctest

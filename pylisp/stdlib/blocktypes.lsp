@@ -17,9 +17,22 @@
      (while ,test ,@body)))
 
 (def::macro for (vardef . body)
-    `(map (fn (,(car vardef)) ,@body)
-        ,(cadr vardef)))
+  `(map (fn (,(car vardef)) ,@body)
+       ,(cadr vardef)))
 
 (def::macro map::macro (f l)
-    `(block ,@(map (fn (x) (list f x)) l)))
+  `(block ,@(map (fn (x) (list f x)) l)))
 
+(def::macro cond (. pairs)
+  (if (= (len pairs) 0)
+    `#0
+    (let (p (car pairs))
+      `(if ,(car p)
+         ,(cadr p)
+         (cond ,@(cdr pairs))))))
+
+(def::macro case (expr . pairs)
+  (let (g1 (gensym))
+    `(let (,g1 ,expr)
+       (case
+         ,@(map {p: `((= ,g1 ,(car p)) ,@(cdr p))} pairs)))))

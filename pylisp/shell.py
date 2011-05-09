@@ -16,10 +16,11 @@ profile = False
 l = lisp.Lisp()
 
 def handle_error(err):
-    print "Call stack:"
-    for i in l.call_stack:
-        print "\t%s" % builtin.str_(i)
-    print "Error:", err
+    if len(l.call_stack) > 1:
+        print "Call stack:"
+        for i in l.call_stack:
+            print "\t%s" % builtin.str_(i)
+    print err
     return ["bubble"]
 l.call_stack[0]._catches[("error",)] = handle_error
 
@@ -64,9 +65,12 @@ def input():
 
     while True:
         try:
-            sexps = lisp.parser.parse(s)
+            sexps = list(lisp.parser.parse(s))
         except IndexError:
             s += raw_input("... > ") + "\n"
+        except SyntaxError as e:
+            print "(error standard syntax): " + str(e)
+            return input()
         else:
             break
     return s

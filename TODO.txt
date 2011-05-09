@@ -1,7 +1,8 @@
- - Optional arguments & keyword arguments?
  - (return) fails inside loops
  - Make set! recognize [], car, cdr, etc
     - Make car, cdr macros?
  - Continuations?
  - Smarter assertions
  - (property)
+ - (is "asdf" str) -> #f
+   This will work once I port to py3k
