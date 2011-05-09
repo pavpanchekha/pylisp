@@ -8,7 +8,7 @@ try:
 except ImportError:
     pass #Probably on Windows
 import os, sys
-import cProfile, pstats
+#import cProfile, pstats
 
 profile = False
 
