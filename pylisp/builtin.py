@@ -117,10 +117,14 @@ _t = {"+": foldable(operator.add, 0), "*": foldable(operator.mul, 1),
 for name, fn in _t.items():
     lispfunc(name)(fn)
 
-_t2 = [len, slice, range, dir, abs, sys.exit, hash, all, map, zip, filter,
-        any, bin, bool, chr, open, format, hex, id, int, max, min,
-        oct, ord, reduce, round, sum, car, cdr, cons, last, list]
+_t2 = [len, slice, range, dir, abs, sys.exit, hash, all, zip, filter,
+       any, bin, bool, chr, open, format, hex, id, int, max, min,
+       oct, ord, reduce, round, sum, car, cdr, cons, last, list]
 
 for fn in _t2:
     lispfunc(fn.__name__)(fn)
 
+
+@lispfunc("map")
+def multimap(f, *lsts):
+    return [f(*args) for args in zip(*lsts)]

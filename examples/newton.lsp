@@ -1,7 +1,7 @@
 
 (def derivative (poly)
-     (cdr (map {x:(* (car x) (cadr x))}
-          (zip poly (range (len poly))))))
+     (cdr (map {n x:(* n x)}
+               (range (len poly)) poly)))
 
 (assert (= (derivative '(7 6 6 0 0 0 1))
            '(6 12 0 0 0 6)))
