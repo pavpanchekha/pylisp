@@ -36,19 +36,23 @@ class Compiler(object):
         return self.compile(s)()
 
     def compile(self, s):
-        code = parser.parse(s) if isinstance(s, str) else s
-        ast = map(self._compile, self.intp.preprocess(code))
-        pkg = self._package(ast)
-        if debug > -1: print_code(ast)
-        return Environment(ast, self.context)
+        try:
+            code = parser.parse(s) if isinstance(s, str) else s
+            ast = map(self._compile, self.intp.preprocess(code))
+            pkg = self._package(ast)
+            if debug > -1: print_code(ast)
+            return Environment(pkg, self.context)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
 
-    def _package(self, ast):
+    def _package(self, res):
         if self.interactive:
-            a, t = ast.Interactive(a), "single"
-        elif len(a) == 1 and isinstance(a[0], ast.Expr):
-            a, t = ast.Expression(a[0].value), "eval"
+            a, t = ast.Interactive(res), "single"
+        elif len(res) == 1 and isinstance(res[0], ast.Expr):
+            a, t = ast.Expression(res[0].value), "eval"
         else:
-            a, t = ast.Module(a), "exec"
+            a, t = ast.Module(res), "exec"
         ast.fix_missing_locations(a) # Line/Col prep
 
         try:
@@ -70,18 +74,20 @@ class Compiler(object):
             raise ValueError("Cannot compile value", tree)
         
         # So now tree is a list
-        if tree[0] in self.special_forms:
-            fn = "STMT_" + self.special_forms(tree[0])
+        if isinstance(tree[0], str) and \
+           tree[0] in self.special_forms:
+            fn = "STMT_" + self.special_forms[tree[0]]
             if hasattr(self, fn):
                 # TODO: parse out keyword arguments
-                return getattr(self, fn)(*tree)
+                return getattr(self, fn)(*tree[1:])
         else:
             return ast.Expr(self._expr(tree))
 
-    def STMT_if(self, test, cons, alt=ast.Pass):
+    def STMT_if(self, test, cons, alt=None):
         return ast.If(self._expr(test),
                       [self._compile(cons)],
-                      [self._compile(alt)])
+                      [self._compile(alt) if alt is not None
+                       else ast.Pass()])
 
     def STMT_block(self, *tree):
         return ast.Suite(map(self._compile, tree[1:]))
