@@ -23,6 +23,201 @@ def print_code(code):
 class Compiler(object):
     def __init__(self, intp=None, interactive=False):
         if intp is None:
+            intp = lisp.Lisp()
+            del intp.macros["while"]
+            del intp.macros["for"]
+            del intp.macros["def"]
+
+        self.intp = intp
+        self.context = self.intp.vars
+        self.interactive = interactive
+
+    def run(self, s):
+        return self.compile(s)()
+
+    def compile(self, s):
+        code = parser.parse(s) if isinstance(s, str) else s
+        ast = map(self._compile, self.intp.preprocess(code))
+        pkg = self._package(ast)
+        if debug > -1: print_code(ast)
+        return Environment(ast, self.context)
+
+    def _package(self, ast):
+        if self.interactive:
+            a, t = ast.Interactive(a), "single"
+        elif len(a) == 1 and isinstance(a[0], ast.Expr):
+            a, t = ast.Expression(a[0].value), "eval"
+        else:
+            a, t = ast.Module(a), "exec"
+        ast.fix_missing_locations(a) # Line/Col prep
+
+        try:
+            return compile(a, "<pylisp>", t)
+        except ValueError:
+            raise Exception("Error Compiling code", ast.dump(a))
+ 
+    special_forms = ["if", "block", ("set!", "set"), "while", "for", "def", "assert"]
+    for i,v in enumerate(special_forms):
+        special_forms[i] = (v, v) if isinstance(v, str) else v
+    special_forms = dict(special_forms)
+
+    def _compile(self, tree):
+        if isinstance(tree, str):
+            return ast.Name(tree, ast.Load())
+        elif type(tree) in map(type, [1, 1.0, True, None]):
+            return ast.Num(n=tree)
+        elif not isinstance(tree, list):
+            raise ValueError("Cannot compile value", tree)
+        
+        # So now tree is a list
+        if tree[0] in self.special_forms:
+            fn = "STMT_" + self.special_forms(tree[0])
+            if hasattr(self, fn):
+                # TODO: parse out keyword arguments
+                return getattr(self, fn)(*tree)
+        else:
+            return ast.Expr(self._expr(tree))
+
+    def STMT_if(self, test, cons, alt=ast.Pass):
+        return ast.If(self._expr(test),
+                      [self._compile(cons)],
+                      [self._compile(alt)])
+
+    def STMT_block(self, *tree):
+        return ast.Suite(map(self._compile, tree[1:]))
+    
+    def STMT_set(self, place, value):
+        ctx = ast.Store()
+        val = self._expr(value)
+
+        if not isinstance(place, list):
+            return ast.Assign([ast.Name(place, ctx)], val)
+        elif place[0] == "'":
+            return ast.Assign([ast.Name(place[1], ctx)], val)
+        elif place[0] == "::":
+            base = self._expr(place[1])
+            id = place[2]
+
+            if isinstance(id, list) and id[0] == "'":
+                return ast.Assign([ast.Attribute(base, id[1], ctx)], val)
+            else:
+                return ast.Expr(ast.Name("setattr", ast.Load()), [self._expr(place[2])])
+        elif place[0] == "[]":
+            base = self._expr(place[1])
+            pos = place[2]
+
+            if isinstance(pos, list) and pos[0] == "slice":
+                sl = ast.Slice(*map(self._toexpr, pos[1:]))
+                return ast.Assign([ast.Subscript(base, sl, ctx)], val)
+            else:
+                sl = ast.Index(pos)
+                return ast.Assign([ast.Subscript(base, sl, ctx)], val)
+        else:
+            raise SyntaxError("Can't set! `%s`" % tree[1][0])
+
+    def STMT_while(self, test, *body):
+        return ast.While(self._expr(test), map(self._compile, body), [])
+
+    def STMT_for(self, binder, *body):
+        target, iter = binder
+        target = self._expr(target)
+        if isinstance(target, ast.Name): target.ctx = ast.Store()
+
+        iter = self._expr(iter)
+        body = map(self._compile, body)
+        return ast.For(target, iter, body, [])
+
+    def STMT_def(self, name, args, body):
+        if "." in args:
+            stargs = args[args.index(".")+1]
+            args = args[:args.index(".")]
+        else:
+            stargs = None
+
+        body = map(self._compile, tree[3:])
+        return ast.FunctionDef(name,
+                               ast.arguments(map(lambda x: ast.Name(x, ast.Param()), args), stargs, None, []),
+                               body,
+                               [])
+
+    def STMT_assert(self, expr, *args):
+        return ast.Assert(self._expr(expr), self._expr(args[0]) if args else None)
+
+    def _const(self, tree):
+        if isinstance(tree, str):
+            return ast.Str(tree)
+        elif type(tree) in map(type, [1, 1.0, True, None]):
+            return ast.Num(tree)
+        elif isinstance(tree, list):
+            return ast.List(map(self._const, tree), ast.Load())
+        else:
+            print "COULD NOT MAKE NODE"
+            print tree
+
+    def _expr(self, tree):
+        if isinstance(tree, str):
+            return ast.Name(tree, ast.Load())
+        elif type(tree) in map(type, [1, 1.0, True, None]):
+            return ast.Num(n=tree)
+        elif tree[0] == "if":
+            if len(tree) == 3:
+                tree.append("nil")
+            test = self._expr(tree[1])
+            ifyes = self._expr(tree[2])
+            ifno = self._expr(tree[3]) if len(tree) > 3 else []
+            return ast.IfExp(test, ifyes, ifno)
+        elif tree[0] == "block":
+            return ast.Subscript(ast.List(map(self._expr, tree[1:]), ast.Load()), ast.Index(ast.Num(-1)), ast.Load())
+        elif tree[0] == "fn":
+            args = tree[1]
+            if "." in args:
+                stargs = args[args.index(".")+1]
+                args = args[:args.index(".")]
+            else:
+                stargs = None
+
+            if len(tree) > 3:
+                body = self._expr(["block"] + tree[2:])
+            else:
+                body = self._expr(tree[2])
+
+            return ast.Lambda(ast.arguments(
+                    [ast.Name(arg, ast.Param()) for arg in args],
+                    stargs, None, []), body)
+        elif tree[0] == "'":
+            if isinstance(tree[1], list):
+                return ast.List(map(self._expr, tree[1]), ast.Load())
+            elif type(tree[1]) in map(type, [1, 1.0, True, None]):
+                return self._expr(tree[1])
+            elif isinstance(tree[1], str):
+                return ast.Str(tree[1])
+        elif tree[0] == "for":
+            return self._expr(["map", ["fn", [tree[1][0]]] + tree[2:], tree[1][1]])
+        elif isinstance(tree[0], str) and tree[0] in binops and len(tree) == 3:
+            return ast.BinOp(self._expr(tree[1]), binops[tree[0]](), self._expr(tree[2]))
+        elif isinstance(tree[0], str) and tree[0] in unops and len(tree) == 2:
+            return ast.UnaryOp(unops[tree[0]](), self._expr(tree[1]))
+        elif tree[0] == "::" and tree[2][0] == "'":
+            return ast.Attribute(self._expr(tree[1]), tree[2][1], ast.Load())
+        elif tree[0] == "[]":
+            if isinstance(tree[1], list) and tree[1][0] == "slice":
+                start = self._expr(tree[1][1]) if len(tree[1]) > 1 else None
+                stop = self._expr(tree[1][2]) if len(tree[1]) > 2 else None
+                step = self._expr(tree[1][3]) if len(tree[1]) > 3 else None
+                return ast.Subscript(self._expr(tree[1]), ast.Subscript(start, stop, step), ast.Load())
+            else:
+                return ast.Subscript(self._expr(tree[1]), ast.Index(self._expr(tree[2])), ast.Load())
+        elif isinstance(tree, list) and tree:
+            return ast.Call(self._expr(tree[0]),
+                    map(self._expr, tree[1:]), [],
+                        None, None)
+        else:
+            print "FAILED TO COMPILE"
+            print tree
+
+class CompilerOld(object):
+    def __init__(self, intp=None, interactive=False):
+        if intp is None:
             self.intp = lisp.Lisp()
             del self.intp.macros["while"]
             del self.intp.macros["for"]
@@ -147,7 +342,9 @@ class Compiler(object):
             else:
                 body = self._toexpr(tree[2])
 
-            return ast.Lambda(ast.arguments(map(lambda x: ast.Name(x, ast.Param()), args), stargs, None, []), body)
+            return ast.Lambda(ast.arguments(
+                    [ast.Name(arg, ast.Param()) for arg in args],
+                    stargs, None, []), body)
         elif tree[0] == "'":
             if isinstance(tree[1], list):
                 return ast.List(map(self._tonode, tree[1]), ast.Load())
@@ -194,7 +391,7 @@ if __name__ == "__main__":
     c = Compiler(interactive=True)
     while True:
         try:
-            s = raw_input("compile> ")
+            s = raw_input("pylisp*> ")
         except:
             break
         c.run(s)
