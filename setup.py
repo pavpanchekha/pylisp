@@ -19,6 +19,6 @@ setup(
         url = "http://pypi.python.org/pypi/pylisp/",
         license = "LICENSE.txt",
         description = "A lisp for pythonistas",
-        long_description = open("README.txt").read(),
+        long_description = open("README.rst").read(),
         data_files = data_files,
     )
