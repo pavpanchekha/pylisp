@@ -77,15 +77,20 @@ def eat_number(s):
     >>> eat_number("five")
     ('', 'five')
     """
-    if s[0] not in "0123456789.": return "", s
+    if s[0] not in "0123456789.-": return "", s
 
-    i = 0
-    while i < len(s) and s[i] in "0123456789.": i += 1
+    if s[0] == '-':
+        i = 1
+    else:
+        i = 0
+    while i < len(s) and (s[i] in "0123456789."): i += 1
 
     mys = s[:i]
 
     if mys == ".":
         return ".", s[1:]
+    elif mys == "-":
+        return eat_name(s)
     elif "." in mys:
         return float(mys), s[i:]
     else:
@@ -244,7 +249,7 @@ def eat_value(s):
         return eat_value(s)
     elif s[0] == "(":
         return eat_sexp(s)
-    elif s[0] in "0123456789.":
+    elif s[0] in "0123456789.-":
         return eat_number(s)
 
     poss_pref = [pref for pref in prefixes if s.startswith(pref)]
